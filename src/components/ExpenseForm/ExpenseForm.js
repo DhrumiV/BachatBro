@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import googleSheetsService from '../../services/googleSheetsService';
 import { format } from 'date-fns';
 
-const ExpenseForm = () => {
+const ExpenseForm = ({ onSuccess }) => {
   const { currentUser, isAuthenticated, setIsAuthenticated, setError: setGlobalError } = useApp();
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -88,6 +88,13 @@ const ExpenseForm = () => {
         type: 'Expense',
         notes: '',
       });
+
+      // Call onSuccess callback if provided (for modal close and dashboard refresh)
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1000); // Wait 1 second to show success message
+      }
     } catch (error) {
       showMessage('❌ Failed to add expense: ' + error.message, 'error');
       setGlobalError(error.message);

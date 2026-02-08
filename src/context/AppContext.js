@@ -57,8 +57,8 @@ export const AppProvider = ({ children }) => {
       cards: ['Credit Card', 'Debit Card'],
       paymentMethods: ['Cash', 'UPI', 'Card', 'Net Banking'],
       types: ['Expense', 'EMI', 'Investment', 'Savings'],
-      monthlyIncome: 0,
-      budgets: {}
+      monthlyBudget: 0, // Changed from monthlyIncome
+      categoryBudgets: {} // Budget per category
     };
     saveUser(newUser);
     return newUser;

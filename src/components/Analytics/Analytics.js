@@ -64,13 +64,13 @@ const Analytics = () => {
     const monthTransactions = transactions.filter(t => t.month === selectedMonth);
     const totalSpent = monthTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-    // Budget vs Actual - Compare with user's budgets
+    // Budget vs Actual - Compare with user's category budgets
     const budgetComparison = {};
     currentUser.categories.forEach(cat => {
       const spent = monthTransactions
         .filter(t => t.category === cat)
         .reduce((sum, t) => sum + (t.amount || 0), 0);
-      const budget = currentUser.budgets?.[cat] || 0;
+      const budget = currentUser.categoryBudgets?.[cat] || currentUser.budgets?.[cat] || 0;
       budgetComparison[cat] = {
         budget,
         spent,
