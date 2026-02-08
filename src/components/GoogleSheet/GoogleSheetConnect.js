@@ -20,6 +20,14 @@ const GoogleSheetConnect = ({ onConnect }) => {
       if (status.isAuthenticated) {
         setIsAuthenticated(true);
         showMessage('Already authenticated with Google', 'success');
+        
+        // If user already has sheet ID and is authenticated, auto-connect
+        if (currentUser?.sheetId) {
+          showMessage('✅ Sheet already connected! Redirecting...', 'success');
+          setTimeout(() => {
+            onConnect();
+          }, 1500);
+        }
       }
     } catch (error) {
       showMessage('Failed to initialize Google API: ' + error.message, 'error');
@@ -217,9 +225,9 @@ const GoogleSheetConnect = ({ onConnect }) => {
         </div>
 
         {/* Security Notice */}
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-          <strong>🔒 Security:</strong> Your authentication token is stored in memory only. 
-          You'll need to sign in again after refreshing the page.
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+          <strong>🔒 Security:</strong> Your authentication token persists during your browser session. 
+          Close your browser to clear the token automatically.
         </div>
       </div>
     </div>

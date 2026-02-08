@@ -12,16 +12,61 @@ const MainLayout = ({ onLogout }) => {
   const { currentUser, isAuthenticated, setIsAuthenticated } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // If not authenticated or no sheet, show connect screen
-    if (!isAuthenticated || !currentUser?.sheetId) {
-      setActiveTab('connect');
+    const checkAuthAndSheet = async () => {
+      setIsCheckingAuth(true);
+      
+      try {
+        // Initialize Google API client
+        await googleSheetsService.initClient();
+        
+        // Check if we have a valid token in sessionStorage
+        const authStatus = googleSheetsService.getAuthStatus();
+        
+        if (authStatus.isAuthenticated) {
+          setIsAuthenticated(true);
+          
+          // If user has sheet ID, go to dashboard
+          if (currentUser?.sheetId) {
+            setActiveTab('dashboard');
+          } else {
+            // Has auth but no sheet - go to connect
+            setActiveTab('connect');
+          }
+        } else {
+          // No auth - go to connect
+          setIsAuthenticated(false);
+          setActiveTab('connect');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setActiveTab('connect');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuthAndSheet();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Watch for changes in auth or sheet connection
+  useEffect(() => {
+    if (!isCheckingAuth) {
+      if (!isAuthenticated || !currentUser?.sheetId) {
+        setActiveTab('connect');
+      } else if (activeTab === 'connect') {
+        // If we're on connect page but now have auth + sheet, go to dashboard
+        setActiveTab('dashboard');
+      }
     }
-  }, [isAuthenticated, currentUser?.sheetId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, currentUser?.sheetId, isCheckingAuth]);
 
   const handleLogout = () => {
-    // Sign out from Google (clears token from memory)
+    // Sign out from Google (clears token from sessionStorage)
     googleSheetsService.signOut();
     setIsAuthenticated(false);
     onLogout();
@@ -29,6 +74,18 @@ const MainLayout = ({ onLogout }) => {
 
   if (!currentUser) {
     return null;
+  }
+
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+          <div className="text-gray-600">Checking authentication...</div>
+        </div>
+      </div>
+    );
   }
 
   const tabs = [
@@ -140,7 +197,7 @@ const MainLayout = ({ onLogout }) => {
 
       {/* Footer Info */}
       <footer className="max-w-7xl mx-auto px-4 py-4 text-center text-sm text-gray-500">
-        <p>🔒 Your auth token is stored in memory only. Refresh = Re-login (by design for security)</p>
+        <p>🔒 Your auth token persists during browser session. Close browser = Re-login (by design for security)</p>
       </footer>
     </div>
   );

@@ -4,8 +4,60 @@ const REQUIRED_HEADERS = ['Date', 'Month', 'Category', 'SubCategory', 'PaymentMe
 class GoogleSheetsService {
   constructor() {
     this.tokenClient = null;
-    this.accessToken = null; // MEMORY ONLY - no localStorage
+    this.accessToken = null;
     this.isInitialized = false;
+    this.tokenExpiry = null;
+    
+    // Try to restore token from sessionStorage (persists during browser session)
+    this.restoreSession();
+  }
+
+  restoreSession() {
+    try {
+      const savedToken = sessionStorage.getItem('gapi_token');
+      const savedExpiry = sessionStorage.getItem('gapi_token_expiry');
+      
+      if (savedToken && savedExpiry) {
+        const expiryTime = parseInt(savedExpiry, 10);
+        const now = Date.now();
+        
+        // Check if token is still valid (with 5 min buffer)
+        if (expiryTime > now + 300000) {
+          this.accessToken = savedToken;
+          this.tokenExpiry = expiryTime;
+          console.log('✅ Session restored from sessionStorage');
+        } else {
+          // Token expired, clear it
+          this.clearSession();
+          console.log('⚠️ Saved token expired');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore session:', error);
+    }
+  }
+
+  saveSession(token, expiresIn = 3600) {
+    try {
+      const expiryTime = Date.now() + (expiresIn * 1000);
+      sessionStorage.setItem('gapi_token', token);
+      sessionStorage.setItem('gapi_token_expiry', expiryTime.toString());
+      this.tokenExpiry = expiryTime;
+      console.log('✅ Session saved to sessionStorage');
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    }
+  }
+
+  clearSession() {
+    try {
+      sessionStorage.removeItem('gapi_token');
+      sessionStorage.removeItem('gapi_token_expiry');
+      this.accessToken = null;
+      this.tokenExpiry = null;
+    } catch (error) {
+      console.error('Failed to clear session:', error);
+    }
   }
 
   initClient() {
@@ -52,8 +104,9 @@ class GoogleSheetsService {
           return;
         }
         
-        // Store in MEMORY ONLY
+        // Store token in memory and sessionStorage
         this.accessToken = response.access_token;
+        this.saveSession(response.access_token, response.expires_in || 3600);
         resolve(response.access_token);
       };
 
@@ -85,7 +138,7 @@ class GoogleSheetsService {
       );
 
       if (response.status === 401) {
-        this.accessToken = null; // Clear invalid token
+        this.clearSession(); // Clear invalid token
         throw new Error('Authentication expired. Please sign in again.');
       }
 
@@ -206,7 +259,7 @@ class GoogleSheetsService {
       );
 
       if (response.status === 401) {
-        this.accessToken = null;
+        this.clearSession();
         throw new Error('Authentication expired. Please sign in again.');
       }
 
@@ -277,7 +330,7 @@ class GoogleSheetsService {
       );
 
       if (response.status === 401) {
-        this.accessToken = null;
+        this.clearSession();
         throw new Error('Authentication expired. Please sign in again.');
       }
 
@@ -332,7 +385,7 @@ class GoogleSheetsService {
       );
 
       if (response.status === 401) {
-        this.accessToken = null;
+        this.clearSession();
         throw new Error('Authentication expired. Please sign in again.');
       }
 
@@ -386,7 +439,7 @@ class GoogleSheetsService {
       );
 
       if (response.status === 401) {
-        this.accessToken = null;
+        this.clearSession();
         throw new Error('Authentication expired. Please sign in again.');
       }
 
@@ -405,8 +458,8 @@ class GoogleSheetsService {
   }
 
   signOut() {
-    // Clear token from memory
-    this.accessToken = null;
+    // Clear token from memory and sessionStorage
+    this.clearSession();
   }
 
   getAuthStatus() {
