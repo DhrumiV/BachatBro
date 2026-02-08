@@ -136,8 +136,8 @@ const ExpenseForm = ({ onSuccess }) => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Expense</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8 transition-colors duration-200">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Add Expense</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Date */}

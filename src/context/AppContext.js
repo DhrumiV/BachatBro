@@ -16,6 +16,7 @@ export const AppProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Auth state in memory
   const [error, setError] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     // Load users from localStorage (structure only, NOT financial data)
@@ -28,7 +29,19 @@ export const AppProvider = ({ children }) => {
       const user = storedUsers.find(u => u.name === currentUserName);
       setCurrentUser(user || null);
     }
+
+    // Load theme preference
+    const savedTheme = localStorage.getItem('darkMode');
+    if (savedTheme !== null) {
+      setDarkMode(savedTheme === 'true');
+    }
   }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('darkMode', newMode.toString());
+  };
 
   const saveUser = (userData) => {
     const updatedUsers = users.filter(u => u.name !== userData.name);
@@ -92,6 +105,8 @@ export const AppProvider = ({ children }) => {
     switchUser,
     addUser,
     deleteUser,
+    darkMode,
+    toggleDarkMode,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

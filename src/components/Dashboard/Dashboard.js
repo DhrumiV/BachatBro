@@ -122,13 +122,13 @@ const Dashboard = () => {
     <div className="space-y-6">
       {/* Add Expense Modal */}
       {showAddExpense && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-colors duration-200">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Add Expense</h2>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Add Expense</h2>
               <button
                 onClick={() => setShowAddExpense(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl"
               >
                 ×
               </button>
@@ -143,7 +143,7 @@ const Dashboard = () => {
 
       {/* Header with Add Expense Button */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800 hidden md:block">Dashboard</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 hidden md:block">Dashboard</h2>
         <button
           onClick={() => setShowAddExpense(true)}
           className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium flex items-center space-x-2 transition-colors md:ml-auto"
@@ -154,13 +154,13 @@ const Dashboard = () => {
       </div>
 
       {/* Month Selector */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Select Month</label>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Month</label>
         <div className="flex space-x-2">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+            className="flex-1 p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
           >
             {uniqueMonths.length > 0 ? (
               uniqueMonths.map(month => (
@@ -187,11 +187,11 @@ const Dashboard = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-4 rounded-lg transition-colors duration-200">
           <strong>Error:</strong> {error}
           <button
             onClick={loadTransactions}
-            className="ml-4 text-red-600 hover:text-red-700 underline"
+            className="ml-4 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline"
           >
             Retry
           </button>
@@ -207,25 +207,25 @@ const Dashboard = () => {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600 mb-1">Total Expense</div>
-              <div className="text-2xl font-bold text-red-600">₹{summary.totalExpense.toFixed(2)}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Expense</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">₹{summary.totalExpense.toFixed(2)}</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600 mb-1">EMI</div>
-              <div className="text-2xl font-bold text-orange-600">₹{summary.totalEMI.toFixed(2)}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">EMI</div>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">₹{summary.totalEMI.toFixed(2)}</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600 mb-1">Investment</div>
-              <div className="text-2xl font-bold text-purple-600">₹{summary.totalInvestment.toFixed(2)}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Investment</div>
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">₹{summary.totalInvestment.toFixed(2)}</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-600 mb-1">Savings</div>
-              <div className="text-2xl font-bold text-green-600">₹{summary.totalSavings.toFixed(2)}</div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Savings</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">₹{summary.totalSavings.toFixed(2)}</div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4 col-span-2 md:col-span-3 lg:col-span-1">
-              <div className="text-sm text-gray-600 mb-1">Balance</div>
-              <div className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 col-span-2 md:col-span-3 lg:col-span-1 transition-colors duration-200">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Balance</div>
+              <div className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 ₹{summary.balance.toFixed(2)}
               </div>
             </div>
@@ -233,16 +233,16 @@ const Dashboard = () => {
 
           {/* No Data Message */}
           {transactions.length === 0 && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-center">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 p-4 rounded-lg text-center transition-colors duration-200">
               No transactions found. Start by adding your first expense!
             </div>
           )}
 
           {/* Recent Expenses */}
           {monthTransactions.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">Recent Expenses</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Recent Expenses</h3>
                 <button
                   onClick={() => setShowRecentChart(!showRecentChart)}
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium"
@@ -255,14 +255,14 @@ const Dashboard = () => {
                 <div>
                   {/* Chart Filters */}
                   <div className="mb-4 flex items-center space-x-4">
-                    <span className="text-sm font-medium text-gray-700">Group by:</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Group by:</span>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setRecentChartFilter('type')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           recentChartFilter === 'type'
                             ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         By Type
@@ -272,7 +272,7 @@ const Dashboard = () => {
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           recentChartFilter === 'category'
                             ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         By Category
@@ -307,13 +307,13 @@ const Dashboard = () => {
                           .map(([type, data]) => (
                             <div key={type} className="space-y-1">
                               <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium text-gray-700">{type}</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{type}</span>
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-gray-500">({data.count} transactions)</span>
-                                  <span className="font-bold text-gray-900">₹{data.total.toFixed(2)}</span>
+                                  <span className="text-gray-500 dark:text-gray-400">({data.count} transactions)</span>
+                                  <span className="font-bold text-gray-900 dark:text-gray-100">₹{data.total.toFixed(2)}</span>
                                 </div>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
                                 <div
                                   className={`h-8 rounded-full ${typeColors[type] || 'bg-blue-500'} flex items-center justify-end pr-3 transition-all duration-500`}
                                   style={{ width: `${(data.total / maxAmount) * 100}%` }}
@@ -349,13 +349,13 @@ const Dashboard = () => {
                           .map(([category, data], index) => (
                             <div key={category} className="space-y-1">
                               <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium text-gray-700">{category}</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{category}</span>
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-gray-500">({data.count} transactions)</span>
-                                  <span className="font-bold text-gray-900">₹{data.total.toFixed(2)}</span>
+                                  <span className="text-gray-500 dark:text-gray-400">({data.count} transactions)</span>
+                                  <span className="font-bold text-gray-900 dark:text-gray-100">₹{data.total.toFixed(2)}</span>
                                 </div>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-8 relative overflow-hidden">
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
                                 <div
                                   className={`h-8 rounded-full ${colors[index % colors.length]} flex items-center justify-end pr-3 transition-all duration-500`}
                                   style={{ width: `${(data.total / maxAmount) * 100}%` }}
@@ -372,7 +372,7 @@ const Dashboard = () => {
                   </div>
 
                   {/* Chart Summary */}
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
                     <strong>💡 Tip:</strong> {recentChartFilter === 'type' 
                       ? 'View spending distribution across transaction types (Expense, EMI, Investment, Savings).'
                       : 'View spending distribution across categories to identify where your money goes.'}
@@ -442,9 +442,9 @@ const Dashboard = () => {
 
           {/* Category Analysis */}
           {Object.keys(categoryData).length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">Category Breakdown</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Category Breakdown</h3>
                 <button
                   onClick={() => setShowCategoryChart(!showCategoryChart)}
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium"
@@ -523,16 +523,16 @@ const Dashboard = () => {
 
           {/* Payment Method Analysis */}
           {Object.keys(paymentData).length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Payment Method Analysis</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Payment Method Analysis</h3>
               <PaymentChart data={paymentData} />
             </div>
           )}
 
           {/* Monthly Trend */}
           {uniqueMonths.length > 1 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Monthly Spending Trend</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Monthly Spending Trend</h3>
               <TrendChart transactions={transactions} months={uniqueMonths} />
             </div>
           )}
