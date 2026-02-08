@@ -18,6 +18,7 @@ const Analytics = () => {
     if (currentUser?.sheetId && isAuthenticated) {
       loadTransactions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.sheetId, isAuthenticated]);
 
   // Recalculate analytics when transactions or month changes
@@ -25,6 +26,7 @@ const Analytics = () => {
     if (transactions.length > 0) {
       calculateAnalytics();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth, transactions]);
 
   const loadTransactions = async () => {

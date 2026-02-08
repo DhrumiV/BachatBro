@@ -14,12 +14,6 @@ const Dashboard = () => {
   const [showCategoryChart, setShowCategoryChart] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (currentUser?.sheetId && isAuthenticated) {
-      loadTransactions();
-    }
-  }, [currentUser?.sheetId, isAuthenticated]);
-
   const loadTransactions = async () => {
     if (!currentUser?.sheetId) {
       setError('No sheet connected');
@@ -49,6 +43,13 @@ const Dashboard = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (currentUser?.sheetId && isAuthenticated) {
+      loadTransactions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.sheetId, isAuthenticated]);
 
   const monthTransactions = transactions.filter(t => t.month === selectedMonth);
 

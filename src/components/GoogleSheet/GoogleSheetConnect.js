@@ -11,10 +11,6 @@ const GoogleSheetConnect = ({ onConnect }) => {
   const [messageType, setMessageType] = useState(''); // 'success', 'error', 'info'
   const [authStatus, setAuthStatus] = useState({ isAuthenticated: false, isInitialized: false });
 
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
   const initializeAuth = async () => {
     try {
       await googleSheetsService.initClient();
@@ -30,6 +26,11 @@ const GoogleSheetConnect = ({ onConnect }) => {
       setGlobalError(error.message);
     }
   };
+
+  useEffect(() => {
+    initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showMessage = (msg, type = 'info') => {
     setMessage(msg);

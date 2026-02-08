@@ -23,11 +23,13 @@ const History = () => {
     if (currentUser?.sheetId && isAuthenticated) {
       loadTransactions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.sheetId, isAuthenticated]);
 
   // Apply filters whenever transactions or filters change
   useEffect(() => {
     applyFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions, filters]);
 
   const loadTransactions = async () => {

@@ -5,7 +5,6 @@ const Settings = () => {
   const { currentUser, saveUser } = useApp();
   const [activeSection, setActiveSection] = useState('categories');
   const [newItem, setNewItem] = useState('');
-  const [editingItem, setEditingItem] = useState(null);
   const [monthlyIncome, setMonthlyIncome] = useState(currentUser.monthlyIncome || 0);
 
   const handleAddItem = (type) => {
