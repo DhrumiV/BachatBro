@@ -119,30 +119,30 @@ const GoogleSheetConnect = ({ onConnect }) => {
   const getMessageStyle = () => {
     switch (messageType) {
       case 'success':
-        return 'bg-green-50 text-green-800 border border-green-200';
+        return 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800';
       case 'error':
-        return 'bg-red-50 text-red-800 border border-red-200';
+        return 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800';
       default:
-        return 'bg-blue-50 text-blue-800 border border-blue-200';
+        return 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800';
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Connect Google Sheet</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8 transition-colors duration-200">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Connect Google Sheet</h2>
 
         {/* Step 1: Google Authentication */}
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="font-semibold text-blue-900 mb-2">Step 1: Authenticate with Google</h3>
-          <p className="text-sm text-blue-700 mb-3">
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors duration-200">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Step 1: Authenticate with Google</h3>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
             Sign in to grant access to your Google Sheets. Your token is stored in memory only for security.
           </p>
           {!authStatus.isAuthenticated ? (
             <button
               onClick={handleGoogleLogin}
               disabled={isAuthenticating || !authStatus.isInitialized}
-              className="w-full md:w-auto px-6 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+              className="w-full md:w-auto px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -150,12 +150,12 @@ const GoogleSheetConnect = ({ onConnect }) => {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              <span className="font-medium">
+              <span className="font-medium text-gray-800 dark:text-gray-200">
                 {isAuthenticating ? 'Authenticating...' : 'Sign in with Google'}
               </span>
             </button>
           ) : (
-            <div className="flex items-center space-x-2 text-green-600 font-medium">
+            <div className="flex items-center space-x-2 text-green-600 dark:text-green-400 font-medium">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
@@ -167,24 +167,24 @@ const GoogleSheetConnect = ({ onConnect }) => {
         {/* Step 2: Sheet ID */}
         {authStatus.isAuthenticated && (
           <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Step 2: Enter Google Sheet ID</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">Step 2: Enter Google Sheet ID</h3>
             <div className="mb-3">
-              <label className="block text-sm text-gray-600 mb-2">
-                Sheet ID (from URL: docs.google.com/spreadsheets/d/<span className="font-mono text-blue-600">SHEET_ID</span>/edit)
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Sheet ID (from URL: docs.google.com/spreadsheets/d/<span className="font-mono text-blue-600 dark:text-blue-400">SHEET_ID</span>/edit)
               </label>
               <input
                 type="text"
                 value={sheetId}
                 onChange={(e) => setSheetId(e.target.value)}
                 placeholder="1AbC2dEfG3hIjK4lMnO5pQrS6tUvW7xYz"
-                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200"
                 disabled={isConnecting}
               />
             </div>
             <button
               onClick={handleTestConnection}
               disabled={isConnecting || !sheetId.trim()}
-              className="w-full md:w-auto px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="w-full md:w-auto px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200"
             >
               {isConnecting ? 'Connecting...' : 'Test Connection & Setup'}
             </button>
@@ -193,17 +193,17 @@ const GoogleSheetConnect = ({ onConnect }) => {
 
         {/* Message */}
         {message && (
-          <div className={`p-4 rounded-lg mb-4 ${getMessageStyle()}`}>
+          <div className={`p-4 rounded-lg mb-4 transition-colors duration-200 ${getMessageStyle()}`}>
             {message}
           </div>
         )}
 
         {/* Download Template */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h3 className="font-semibold text-gray-800 mb-2">Need a template?</h3>
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Need a template?</h3>
           <button
             onClick={downloadTemplate}
-            className="text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center space-x-1 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -213,8 +213,8 @@ const GoogleSheetConnect = ({ onConnect }) => {
         </div>
 
         {/* Instructions */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-          <h4 className="font-semibold text-gray-800 mb-2">Setup Instructions:</h4>
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Setup Instructions:</h4>
           <ol className="list-decimal list-inside space-y-1">
             <li>Create a new Google Sheet</li>
             <li>Copy the Sheet ID from the URL</li>
@@ -225,7 +225,7 @@ const GoogleSheetConnect = ({ onConnect }) => {
         </div>
 
         {/* Security Notice */}
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-200 transition-colors duration-200">
           <strong>🔒 Security:</strong> Your authentication token persists during your browser session. 
           Close your browser to clear the token automatically.
         </div>
