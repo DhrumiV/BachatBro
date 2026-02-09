@@ -152,10 +152,10 @@ const History = () => {
   if (!isAuthenticated) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-500 mb-4">Please authenticate with Google to view history</div>
+        <div className="text-gray-500 dark:text-gray-400 mb-4">Please authenticate with Google to view history</div>
         <button
           onClick={() => window.location.reload()}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
         >
           Go to Connect Sheet
         </button>
@@ -166,7 +166,7 @@ const History = () => {
   if (!currentUser?.sheetId) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-500">No sheet connected. Please connect a Google Sheet first.</div>
+        <div className="text-gray-500 dark:text-gray-400">No sheet connected. Please connect a Google Sheet first.</div>
       </div>
     );
   }
@@ -178,7 +178,7 @@ const History = () => {
         <button
           onClick={loadTransactions}
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
           title="Refresh data from Google Sheets"
         >
           {isLoading ? '⏳ Loading...' : '🔄 Refresh from Sheet'}
@@ -187,11 +187,11 @@ const History = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-4 rounded-lg transition-colors duration-200">
           <strong>Error:</strong> {error}
           <button
             onClick={loadTransactions}
-            className="ml-4 text-red-600 hover:text-red-700 underline"
+            className="ml-4 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline"
           >
             Retry
           </button>
@@ -202,21 +202,21 @@ const History = () => {
       {isLoading && (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <div className="text-gray-500 mt-4">Loading from Google Sheets...</div>
+          <div className="text-gray-500 dark:text-gray-400 mt-4">Loading from Google Sheets...</div>
         </div>
       )}
 
       {/* Filters */}
       {!isLoading && (
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Filters</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Month</label>
             <select
               value={filters.month}
               onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-              className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
             >
               <option value="">All Months</option>
               {uniqueMonths.map(month => (
@@ -227,11 +227,11 @@ const History = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
             <select
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
             >
               <option value="">All Categories</option>
               {currentUser.categories.map(cat => (
@@ -240,11 +240,11 @@ const History = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
             <select
               value={filters.paymentMethod}
               onChange={(e) => setFilters({ ...filters, paymentMethod: e.target.value })}
-              className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
             >
               <option value="">All Methods</option>
               {currentUser.paymentMethods.map(method => (
@@ -258,59 +258,59 @@ const History = () => {
 
       {/* Transactions Table */}
       {!isLoading && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-colors duration-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               Transactions ({filteredTransactions.length})
             </h3>
           </div>
           <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700 transition-colors duration-200">
               <tr>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Amount</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Payment</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Category</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Payment</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredTransactions.map((transaction) => (
-                <tr key={transaction.rowIndex} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">{transaction.date}</td>
+                <tr key={transaction.rowIndex} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                  <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{transaction.date}</td>
                   <td className="py-3 px-4">
-                    <div className="font-medium">{transaction.category}</div>
+                    <div className="font-medium text-gray-800 dark:text-gray-200">{transaction.category}</div>
                     {transaction.subCategory && (
-                      <div className="text-sm text-gray-500">{transaction.subCategory}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{transaction.subCategory}</div>
                     )}
                   </td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      transaction.type === 'Expense' ? 'bg-red-100 text-red-800' :
-                      transaction.type === 'EMI' ? 'bg-orange-100 text-orange-800' :
-                      transaction.type === 'Investment' ? 'bg-purple-100 text-purple-800' :
-                      'bg-green-100 text-green-800'
+                      transaction.type === 'Expense' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
+                      transaction.type === 'EMI' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
+                      transaction.type === 'Investment' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
+                      'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
                     }`}>
                       {transaction.type}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right font-medium">₹{transaction.amount.toFixed(2)}</td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 text-right font-medium text-gray-800 dark:text-gray-200">₹{transaction.amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-gray-800 dark:text-gray-200">
                     {transaction.paymentMethod}
                     {transaction.cardName && ` - ${transaction.cardName}`}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => handleEdit(transaction)}
-                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm mr-2"
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm mr-2 transition-colors duration-200"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(transaction)}
-                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm transition-colors duration-200"
                     >
                       Delete
                     </button>
@@ -320,7 +320,7 @@ const History = () => {
             </tbody>
           </table>
           {filteredTransactions.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               No transactions found
             </div>
           )}
@@ -331,24 +331,24 @@ const History = () => {
       {/* Edit Modal */}
       {editingTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-screen overflow-y-auto">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Edit Transaction</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-screen overflow-y-auto transition-colors duration-200">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Edit Transaction</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
                 <input
                   type="date"
                   value={editingTransaction.date}
                   onChange={(e) => setEditingTransaction({ ...editingTransaction, date: e.target.value })}
-                  className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                 <select
                   value={editingTransaction.category}
                   onChange={(e) => setEditingTransaction({ ...editingTransaction, category: e.target.value })}
-                  className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
                 >
                   {currentUser.categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -356,25 +356,25 @@ const History = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
                 <input
                   type="number"
                   value={editingTransaction.amount}
                   onChange={(e) => setEditingTransaction({ ...editingTransaction, amount: parseFloat(e.target.value) })}
-                  className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
                 />
               </div>
               <div className="flex space-x-2 pt-4">
                 <button
                   onClick={handleSaveEdit}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium"
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
                 >
                   {isLoading ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   onClick={() => setEditingTransaction(null)}
-                  className="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg font-medium"
+                  className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 rounded-lg font-medium transition-colors duration-200"
                 >
                   Cancel
                 </button>

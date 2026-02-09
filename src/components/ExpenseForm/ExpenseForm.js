@@ -142,25 +142,25 @@ const ExpenseForm = ({ onSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
             <input
               type="date"
               name="date"
               value={formData.date}
               onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
               required
             />
           </div>
 
           {/* Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Type *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type *</label>
             <select
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
             >
               {(currentUser.types || ['Expense', 'EMI', 'Investment', 'Savings']).map((type) => (
                 <option key={type} value={type}>{type}</option>
@@ -170,12 +170,12 @@ const ExpenseForm = ({ onSuccess }) => {
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category *</label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
               required
             >
               <option value="">Select Category</option>
@@ -187,25 +187,25 @@ const ExpenseForm = ({ onSuccess }) => {
 
           {/* SubCategory */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sub Category</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sub Category</label>
             <input
               type="text"
               name="subCategory"
               value={formData.subCategory}
               onChange={handleChange}
               placeholder="e.g., Groceries, Fuel"
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
             />
           </div>
 
           {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
             <select
               name="paymentMethod"
               value={formData.paymentMethod}
               onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
             >
               <option value="">Select Method</option>
               {currentUser.paymentMethods.map((method) => (
@@ -217,12 +217,12 @@ const ExpenseForm = ({ onSuccess }) => {
           {/* Card Name (conditional) */}
           {formData.paymentMethod === 'Card' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Card Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Card Name</label>
               <select
                 name="cardName"
                 value={formData.cardName}
                 onChange={handleChange}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
               >
                 <option value="">Select Card</option>
                 {currentUser.cards.map((card) => (
@@ -234,7 +234,7 @@ const ExpenseForm = ({ onSuccess }) => {
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₹) *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (₹) *</label>
             <input
               type="number"
               name="amount"
@@ -243,21 +243,21 @@ const ExpenseForm = ({ onSuccess }) => {
               placeholder="0.00"
               step="0.01"
               min="0"
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
               required
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               placeholder="Optional notes"
               rows="3"
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
             />
           </div>
 
@@ -273,17 +273,17 @@ const ExpenseForm = ({ onSuccess }) => {
 
         {/* Message */}
         {message && (
-          <div className={`mt-4 p-4 rounded-lg ${
-            messageType === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 
-            messageType === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-            'bg-blue-50 text-blue-800 border border-blue-200'
+          <div className={`mt-4 p-4 rounded-lg transition-colors duration-200 ${
+            messageType === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800' : 
+            messageType === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800' :
+            'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800'
           }`}>
             {message}
           </div>
         )}
 
         {/* Info */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
           <strong>💡 Tip:</strong> Data is saved directly to your Google Sheet. 
           Refresh the Dashboard to see updated totals.
         </div>

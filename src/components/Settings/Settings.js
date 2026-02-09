@@ -60,8 +60,8 @@ const Settings = () => {
   const renderList = (items, type) => (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <span className="font-medium text-gray-800">{item}</span>
+        <div key={item} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
+          <span className="font-medium text-gray-800 dark:text-gray-100">{item}</span>
           <button
             onClick={() => handleDeleteItem(type, item)}
             className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
@@ -76,7 +76,7 @@ const Settings = () => {
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           placeholder={`Add new ${type}`}
-          className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+          className="flex-1 p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
           onKeyPress={(e) => e.key === 'Enter' && handleAddItem(type)}
         />
         <button
@@ -95,7 +95,7 @@ const Settings = () => {
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Settings</h2>
 
         {/* Section Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b pb-4">
+        <div className="flex flex-wrap gap-2 mb-6 border-b dark:border-gray-700 pb-4 transition-colors duration-200">
           {[
             { id: 'budget', label: '💰 Monthly Budget' },
             { id: 'categories', label: '📁 Categories' },
@@ -109,7 +109,7 @@ const Settings = () => {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeSection === section.id
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               {section.label}
@@ -121,11 +121,11 @@ const Settings = () => {
         <div>
           {activeSection === 'budget' && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Monthly Budget Settings</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 transition-colors duration-200">Monthly Budget Settings</h3>
               <div className="space-y-6">
                 {/* Total Monthly Budget */}
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors duration-200">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Total Monthly Budget (₹)
                   </label>
                   <input
@@ -133,21 +133,21 @@ const Settings = () => {
                     value={monthlyBudget}
                     onChange={(e) => setMonthlyBudget(e.target.value)}
                     placeholder="Enter total monthly budget"
-                    className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none mb-3"
+                    className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none mb-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
                   />
-                  <div className="text-sm text-blue-700">
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
                     This is your total budget for the month. Set category-wise budgets below.
                   </div>
                 </div>
 
                 {/* Category-wise Budgets */}
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Category-wise Budget Allocation</h4>
+                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">Category-wise Budget Allocation</h4>
                   <div className="space-y-3">
                     {currentUser.categories.map((category) => (
-                      <div key={category} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={category} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {category}
                           </label>
                           <input
@@ -155,10 +155,10 @@ const Settings = () => {
                             value={categoryBudgets[category] || 0}
                             onChange={(e) => handleCategoryBudgetChange(category, e.target.value)}
                             placeholder="0"
-                            className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                            className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
                           />
                         </div>
-                        <div className="text-sm text-gray-600 min-w-[80px] text-right">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-right">
                           {monthlyBudget > 0 && categoryBudgets[category] > 0
                             ? `${((categoryBudgets[category] / monthlyBudget) * 100).toFixed(1)}%`
                             : '0%'}
@@ -168,16 +168,16 @@ const Settings = () => {
                   </div>
                   
                   {/* Budget Summary */}
-                  <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                  <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg transition-colors duration-200">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-gray-700">Total Allocated:</span>
-                      <span className="font-bold text-gray-900">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Total Allocated:</span>
+                      <span className="font-bold text-gray-900 dark:text-gray-100">
                         ₹{Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-gray-700">Monthly Budget:</span>
-                      <span className="font-bold text-gray-900">₹{parseFloat(monthlyBudget || 0).toFixed(2)}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Monthly Budget:</span>
+                      <span className="font-bold text-gray-900 dark:text-gray-100">₹{parseFloat(monthlyBudget || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2 border-t border-gray-300">
                       <span className="font-medium text-gray-700">Remaining:</span>
