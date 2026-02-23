@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 
-const Settings = () => {
-  const { currentUser, saveUser } = useApp();
-  const [activeSection, setActiveSection] = useState('budget');
+const Settings = ({ initialSection = 'budget' }) => {
+  const { currentUser, saveUser, darkMode, toggleDarkMode } = useApp();
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [newItem, setNewItem] = useState('');
-  const [monthlyBudget, setMonthlyBudget] = useState(currentUser.monthlyBudget || currentUser.monthlyIncome || 0);
-  const [categoryBudgets, setCategoryBudgets] = useState(currentUser.categoryBudgets || currentUser.budgets || {});
+  const [monthlyBudget, setMonthlyBudget] = useState(currentUser.monthlyBudget || 0);
+  const [categoryBudgets, setCategoryBudgets] = useState(currentUser.categoryBudgets || {});
 
   const handleAddItem = (type) => {
     if (!newItem.trim()) return;
@@ -18,8 +18,6 @@ const Settings = () => {
       updated.cards = [...updated.cards, newItem.trim()];
     } else if (type === 'payment') {
       updated.paymentMethods = [...updated.paymentMethods, newItem.trim()];
-    } else if (type === 'type') {
-      updated.types = [...(updated.types || ['Expense', 'EMI', 'Investment', 'Savings']), newItem.trim()];
     }
 
     saveUser(updated);
@@ -34,8 +32,6 @@ const Settings = () => {
       updated.cards = updated.cards.filter(c => c !== item);
     } else if (type === 'payment') {
       updated.paymentMethods = updated.paymentMethods.filter(p => p !== item);
-    } else if (type === 'type') {
-      updated.types = updated.types.filter(t => t !== item);
     }
 
     saveUser(updated);
@@ -57,16 +53,19 @@ const Settings = () => {
     });
   };
 
-  const renderList = (items, type) => (
-    <div className="space-y-2">
+  const renderList = (items, type, emoji) => (
+    <div className="space-y-3">
       {items.map((item) => (
-        <div key={item} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
-          <span className="font-medium text-gray-800 dark:text-gray-100">{item}</span>
+        <div key={item} className="flex items-center justify-between p-4 bg-input-bg rounded-xl border border-white/10">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">{emoji}</span>
+            <span className="font-medium text-white">{item}</span>
+          </div>
           <button
             onClick={() => handleDeleteItem(type, item)}
-            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+            className="text-danger hover:text-danger/80 text-sm"
           >
-            Delete
+            🗑️ Delete
           </button>
         </div>
       ))}
@@ -76,12 +75,12 @@ const Settings = () => {
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           placeholder={`Add new ${type}`}
-          className="flex-1 p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
+          className="input-field flex-1"
           onKeyPress={(e) => e.key === 'Enter' && handleAddItem(type)}
         />
         <button
           onClick={() => handleAddItem(type)}
-          className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium"
+          className="btn-primary"
         >
           Add
         </button>
@@ -90,151 +89,184 @@ const Settings = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 transition-colors duration-200">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Settings</h2>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-1">Settings</h1>
+        <p className="text-secondary-text">Manage your preferences and categories</p>
+      </div>
 
-        {/* Section Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b dark:border-gray-700 pb-4 transition-colors duration-200">
+      {/* Section Tabs */}
+      <div className="card p-2">
+        <div className="flex flex-wrap gap-2">
           {[
-            { id: 'budget', label: '💰 Monthly Budget' },
-            { id: 'categories', label: '📁 Categories' },
-            { id: 'types', label: '🏷️ Types' },
-            { id: 'cards', label: '💳 Cards' },
-            { id: 'payments', label: '💵 Payment Methods' },
+            { id: 'budget', label: 'Monthly Budget' },
+            { id: 'categories', label: 'Categories' },
+            { id: 'payments', label: 'Payment Methods' },
+            { id: 'preferences', label: 'Preferences' },
           ].map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl font-medium transition-all ${
                 activeSection === section.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-accent text-white'
+                  : 'text-secondary-text hover:text-white hover:bg-white/5'
               }`}
             >
               {section.label}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Content */}
-        <div>
-          {activeSection === 'budget' && (
+      {/* Content */}
+      <div className="card p-6">
+        {activeSection === 'budget' && (
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold text-white">Monthly Budget Settings</h3>
+            
+            {/* Total Monthly Budget */}
+            <div className="bg-accent/10 border border-accent/20 rounded-xl p-4">
+              <label className="block text-sm font-medium text-secondary-text mb-2">
+                Total Monthly Budget (₹)
+              </label>
+              <input
+                type="number"
+                value={monthlyBudget}
+                onChange={(e) => setMonthlyBudget(e.target.value)}
+                placeholder="Enter total monthly budget"
+                className="input-field w-full text-xl"
+              />
+            </div>
+
+            {/* Category-wise Budgets */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 transition-colors duration-200">Monthly Budget Settings</h3>
-              <div className="space-y-6">
-                {/* Total Monthly Budget */}
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors duration-200">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Total Monthly Budget (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={monthlyBudget}
-                    onChange={(e) => setMonthlyBudget(e.target.value)}
-                    placeholder="Enter total monthly budget"
-                    className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none mb-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
-                  />
-                  <div className="text-sm text-blue-700 dark:text-blue-300">
-                    This is your total budget for the month. Set category-wise budgets below.
-                  </div>
-                </div>
-
-                {/* Category-wise Budgets */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">Category-wise Budget Allocation</h4>
-                  <div className="space-y-3">
-                    {currentUser.categories.map((category) => (
-                      <div key={category} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {category}
-                          </label>
-                          <input
-                            type="number"
-                            value={categoryBudgets[category] || 0}
-                            onChange={(e) => handleCategoryBudgetChange(category, e.target.value)}
-                            placeholder="0"
-                            className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
-                          />
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-right">
-                          {monthlyBudget > 0 && categoryBudgets[category] > 0
-                            ? `${((categoryBudgets[category] / monthlyBudget) * 100).toFixed(1)}%`
-                            : '0%'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <h4 className="font-semibold text-white mb-3">Category Budget Allocation</h4>
+              <div className="space-y-3">
+                {currentUser.categories.map((category) => {
+                  const budget = categoryBudgets[category] || 0;
+                  const percentage = monthlyBudget > 0 ? (budget / monthlyBudget) * 100 : 0;
                   
-                  {/* Budget Summary */}
-                  <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg transition-colors duration-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Total Allocated:</span>
-                      <span className="font-bold text-gray-900 dark:text-gray-100">
-                        ₹{Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(2)}
-                      </span>
+                  return (
+                    <div key={category} className="bg-input-bg rounded-xl p-4 border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-white font-medium">{category}</label>
+                        <span className="text-secondary-text text-sm">{percentage.toFixed(1)}%</span>
+                      </div>
+                      <input
+                        type="number"
+                        value={budget}
+                        onChange={(e) => handleCategoryBudgetChange(category, e.target.value)}
+                        placeholder="0"
+                        className="input-field w-full"
+                      />
                     </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Monthly Budget:</span>
-                      <span className="font-bold text-gray-900 dark:text-gray-100">₹{parseFloat(monthlyBudget || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-300">
-                      <span className="font-medium text-gray-700">Remaining:</span>
-                      <span className={`font-bold ${
-                        (parseFloat(monthlyBudget || 0) - Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)) >= 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}>
-                        ₹{(parseFloat(monthlyBudget || 0) - Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+                  );
+                })}
+              </div>
+              
+              {/* Budget Summary */}
+              <div className="mt-4 bg-white/5 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-secondary-text">Total Allocated:</span>
+                  <span className="font-bold text-white">
+                    ₹{Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(2)}
+                  </span>
                 </div>
-
-                <button
-                  onClick={handleSaveBudget}
-                  className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
-                >
-                  Save Budget Settings
-                </button>
-
-                <div className="p-4 bg-green-50 rounded-lg text-sm text-green-800">
-                  <strong>💡 Tip:</strong> Allocate your budget across categories to track spending better. 
-                  The 50/30/20 rule suggests: 50% needs, 30% wants, 20% savings.
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-secondary-text">Monthly Budget:</span>
+                  <span className="font-bold text-white">₹{parseFloat(monthlyBudget || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                  <span className="text-secondary-text">Remaining:</span>
+                  <span className={`font-bold ${
+                    (parseFloat(monthlyBudget || 0) - Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)) >= 0
+                      ? 'text-success'
+                      : 'text-danger'
+                  }`}>
+                    ₹{(parseFloat(monthlyBudget || 0) - Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)).toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
-          )}
 
-          {activeSection === 'categories' && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Categories</h3>
-              {renderList(currentUser.categories, 'category')}
-            </div>
-          )}
+            <button onClick={handleSaveBudget} className="btn-primary w-full">
+              Save Budget Settings
+            </button>
+          </div>
+        )}
 
-          {activeSection === 'types' && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Types</h3>
-              {renderList(currentUser.types || ['Expense', 'EMI', 'Investment', 'Savings'], 'type')}
-            </div>
-          )}
+        {activeSection === 'categories' && (
+          <div>
+            <h3 className="text-xl font-bold text-white mb-4">Manage Categories</h3>
+            {renderList(currentUser.categories, 'category', '📁')}
+          </div>
+        )}
 
-          {activeSection === 'cards' && (
+        {activeSection === 'payments' && (
+          <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Cards</h3>
-              {renderList(currentUser.cards, 'card')}
+              <h3 className="text-xl font-bold text-white mb-4">Payment Methods</h3>
+              {renderList(currentUser.paymentMethods, 'payment', '💳')}
             </div>
-          )}
+            
+            <div>
+              <h3 className="text-xl font-bold text-white mb-4">Cards</h3>
+              {renderList(currentUser.cards, 'card', '💳')}
+            </div>
+          </div>
+        )}
 
-          {activeSection === 'payments' && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Payment Methods</h3>
-              {renderList(currentUser.paymentMethods, 'payment')}
+        {activeSection === 'preferences' && (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold text-white mb-4">Preferences</h3>
+            
+            {/* Currency */}
+            <div className="bg-input-bg rounded-xl p-4 border border-white/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium">Currency</div>
+                  <div className="text-secondary-text text-sm">Indian Rupee (₹)</div>
+                </div>
+                <span className="text-2xl">₹</span>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Dark Mode */}
+            <div className="bg-input-bg rounded-xl p-4 border border-white/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium">Dark Mode</div>
+                  <div className="text-secondary-text text-sm">Currently enabled</div>
+                </div>
+                <button
+                  onClick={toggleDarkMode}
+                  className={`w-14 h-8 rounded-full transition-all ${
+                    darkMode ? 'bg-accent' : 'bg-white/20'
+                  } relative`}
+                >
+                  <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${
+                    darkMode ? 'right-1' : 'left-1'
+                  }`}></div>
+                </button>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className="bg-input-bg rounded-xl p-4 border border-white/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium">Notifications</div>
+                  <div className="text-secondary-text text-sm">Budget alerts and reminders</div>
+                </div>
+                <button className="w-14 h-8 rounded-full bg-white/20 relative">
+                  <div className="w-6 h-6 bg-white rounded-full absolute top-1 left-1"></div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

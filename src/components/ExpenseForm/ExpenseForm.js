@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 
 const ExpenseForm = ({ onSuccess }) => {
   const { currentUser, isAuthenticated, setIsAuthenticated, setError: setGlobalError } = useApp();
+  const [transactionType, setTransactionType] = useState('Expense');
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     category: '',
@@ -12,12 +13,11 @@ const ExpenseForm = ({ onSuccess }) => {
     paymentMethod: '',
     cardName: '',
     amount: '',
-    type: 'Expense',
     notes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+  const [messageType, setMessageType] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,35 +30,27 @@ const ExpenseForm = ({ onSuccess }) => {
     setTimeout(() => {
       setMessage('');
       setMessageType('');
-    }, 5000);
+    }, 3000);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.category || !formData.amount) {
-      showMessage('❌ Category and Amount are required', 'error');
+      showMessage('Category and Amount are required', 'error');
       return;
     }
 
-    if (!isAuthenticated) {
-      showMessage('❌ Not authenticated. Please sign in with Google.', 'error');
-      return;
-    }
-
-    if (!currentUser?.sheetId) {
-      showMessage('❌ No sheet connected. Please connect a Google Sheet first.', 'error');
+    if (!isAuthenticated || !currentUser?.sheetId) {
+      showMessage('Not authenticated. Please sign in with Google.', 'error');
       return;
     }
 
     setIsSubmitting(true);
-    setMessage('💾 Saving to Google Sheets...');
-    setMessageType('info');
 
     try {
       const date = new Date(formData.date);
-      const month = format(date, 'yyyy-MM'); // Format: 2026-02
+      const month = format(date, 'yyyy-MM');
       
       const transaction = {
         date: formData.date,
@@ -68,14 +60,13 @@ const ExpenseForm = ({ onSuccess }) => {
         paymentMethod: formData.paymentMethod || '',
         cardName: formData.cardName || '',
         amount: parseFloat(formData.amount),
-        type: formData.type,
+        type: transactionType,
         notes: formData.notes || '',
       };
 
-      // Write to Google Sheets
       await googleSheetsService.addTransaction(currentUser.sheetId, transaction);
 
-      showMessage('✅ Expense added successfully to Google Sheets!', 'success');
+      showMessage('Transaction added successfully!', 'success');
       
       // Reset form
       setFormData({
@@ -85,21 +76,16 @@ const ExpenseForm = ({ onSuccess }) => {
         paymentMethod: '',
         cardName: '',
         amount: '',
-        type: 'Expense',
         notes: '',
       });
 
-      // Call onSuccess callback if provided (for modal close and dashboard refresh)
       if (onSuccess) {
-        setTimeout(() => {
-          onSuccess();
-        }, 1000); // Wait 1 second to show success message
+        setTimeout(() => onSuccess(), 1000);
       }
     } catch (error) {
-      showMessage('❌ Failed to add expense: ' + error.message, 'error');
+      showMessage('Failed to add transaction: ' + error.message, 'error');
       setGlobalError(error.message);
       
-      // If auth expired, update status
       if (error.message.includes('Authentication expired')) {
         setIsAuthenticated(false);
       }
@@ -108,74 +94,73 @@ const ExpenseForm = ({ onSuccess }) => {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !currentUser?.sheetId) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-lg text-center">
-          <p className="mb-4">Please authenticate with Google to add expenses</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
-          >
-            Go to Connect Sheet
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentUser?.sheetId) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-lg text-center">
-          <p>No sheet connected. Please connect a Google Sheet first.</p>
-        </div>
+      <div className="text-center py-12">
+        <div className="text-secondary-text mb-4">Please connect your Google Sheet to add transactions</div>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8 transition-colors duration-200">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Add Expense</h2>
+      <div className="card p-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Record Transaction</h2>
+
+        {/* Type Toggle */}
+        <div className="flex bg-input-bg rounded-xl p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => setTransactionType('Income')}
+            className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+              transactionType === 'Income'
+                ? 'bg-success text-white'
+                : 'text-secondary-text hover:text-white'
+            }`}
+          >
+            Income
+          </button>
+          <button
+            type="button"
+            onClick={() => setTransactionType('Expense')}
+            className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+              transactionType === 'Expense'
+                ? 'bg-danger text-white'
+                : 'text-secondary-text hover:text-white'
+            }`}
+          >
+            Expense
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Date */}
+          {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
-              required
-            />
-          </div>
-
-          {/* Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type *</label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
-            >
-              {(currentUser.types || ['Expense', 'EMI', 'Investment', 'Savings']).map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-secondary-text mb-2">Amount</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-xl">₹</span>
+              <input
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={handleChange}
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                className="input-field w-full pl-10 text-2xl"
+                required
+              />
+            </div>
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category *</label>
+            <label className="block text-sm font-medium text-secondary-text mb-2">Category</label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+              className="input-field w-full"
               required
             >
               <option value="">Select Category</option>
@@ -185,27 +170,14 @@ const ExpenseForm = ({ onSuccess }) => {
             </select>
           </div>
 
-          {/* SubCategory */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sub Category</label>
-            <input
-              type="text"
-              name="subCategory"
-              value={formData.subCategory}
-              onChange={handleChange}
-              placeholder="e.g., Groceries, Fuel"
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
-            />
-          </div>
-
           {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
+            <label className="block text-sm font-medium text-secondary-text mb-2">Payment Method</label>
             <select
               name="paymentMethod"
               value={formData.paymentMethod}
               onChange={handleChange}
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+              className="input-field w-full"
             >
               <option value="">Select Method</option>
               {currentUser.paymentMethods.map((method) => (
@@ -217,12 +189,12 @@ const ExpenseForm = ({ onSuccess }) => {
           {/* Card Name (conditional) */}
           {formData.paymentMethod === 'Card' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Card Name</label>
+              <label className="block text-sm font-medium text-secondary-text mb-2">Card Name</label>
               <select
                 name="cardName"
                 value={formData.cardName}
                 onChange={handleChange}
-                className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                className="input-field w-full"
               >
                 <option value="">Select Card</option>
                 {currentUser.cards.map((card) => (
@@ -232,32 +204,29 @@ const ExpenseForm = ({ onSuccess }) => {
             </div>
           )}
 
-          {/* Amount */}
+          {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (₹) *</label>
+            <label className="block text-sm font-medium text-secondary-text mb-2">Date</label>
             <input
-              type="number"
-              name="amount"
-              value={formData.amount}
+              type="date"
+              name="date"
+              value={formData.date}
               onChange={handleChange}
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
+              className="input-field w-full"
               required
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-secondary-text mb-2">Note</label>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               placeholder="Optional notes"
               rows="3"
-              className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
+              className="input-field w-full resize-none"
             />
           </div>
 
@@ -265,28 +234,22 @@ const ExpenseForm = ({ onSuccess }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full p-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-lg transition-colors"
+            className="btn-primary w-full text-lg py-4"
           >
-            {isSubmitting ? '💾 Saving to Google Sheets...' : '💾 Add Expense'}
+            {isSubmitting ? 'Saving...' : `Log ${transactionType}`}
           </button>
         </form>
 
         {/* Message */}
         {message && (
-          <div className={`mt-4 p-4 rounded-lg transition-colors duration-200 ${
-            messageType === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800' : 
-            messageType === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800' :
-            'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800'
+          <div className={`mt-4 p-4 rounded-xl ${
+            messageType === 'success' 
+              ? 'bg-success/10 text-success border border-success/20' 
+              : 'bg-danger/10 text-danger border border-danger/20'
           }`}>
             {message}
           </div>
         )}
-
-        {/* Info */}
-        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
-          <strong>💡 Tip:</strong> Data is saved directly to your Google Sheet. 
-          Refresh the Dashboard to see updated totals.
-        </div>
       </div>
     </div>
   );

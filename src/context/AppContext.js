@@ -16,7 +16,7 @@ export const AppProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Auth state in memory
   const [error, setError] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // Always dark mode by default
 
   useEffect(() => {
     // Load users from localStorage (structure only, NOT financial data)
@@ -30,10 +30,13 @@ export const AppProvider = ({ children }) => {
       setCurrentUser(user || null);
     }
 
-    // Load theme preference
+    // Load theme preference - default to dark mode
     const savedTheme = localStorage.getItem('darkMode');
     if (savedTheme !== null) {
       setDarkMode(savedTheme === 'true');
+    } else {
+      setDarkMode(true); // Default to dark mode
+      localStorage.setItem('darkMode', 'true');
     }
   }, []);
 
@@ -70,9 +73,14 @@ export const AppProvider = ({ children }) => {
       cards: ['Credit Card', 'Debit Card'],
       paymentMethods: ['Cash', 'UPI', 'Card', 'Net Banking'],
       types: ['Expense', 'EMI', 'Investment', 'Savings'],
-      monthlyBudget: 0, // Changed from monthlyIncome
-      categoryBudgets: {} // Budget per category
+      monthlyBudget: 0,
+      categoryBudgets: {}
     };
+    
+    // Store creation timestamp
+    const createdAt = new Date().toISOString();
+    localStorage.setItem(`user_${userName}_createdAt`, createdAt);
+    
     saveUser(newUser);
     return newUser;
   };

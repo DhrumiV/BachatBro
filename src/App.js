@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AppProvider } from './context/AppContext';
 import Auth from './components/Auth/Auth';
 import MainLayout from './components/Layout/MainLayout';
+import LandingPage from './components/Landing/LandingPage';
+import OfflineBanner from './components/Common/OfflineBanner';
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { darkMode } = useApp();
 
   useEffect(() => {
     const currentUser = localStorage.getItem('currentUser');
@@ -14,23 +16,36 @@ function AppContent() {
     }
   }, []);
 
+  // Always apply dark mode class
   useEffect(() => {
-    // Apply dark mode class to document
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {!isAuthenticated ? (
-        <Auth onAuthenticate={() => setIsAuthenticated(true)} />
-      ) : (
-        <MainLayout onLogout={() => setIsAuthenticated(false)} />
-      )}
-    </div>
+    <Router>
+      <div className="min-h-screen bg-dark-bg">
+        <OfflineBanner />
+        <Routes>
+          {/* Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* App Routes */}
+          <Route 
+            path="/app" 
+            element={
+              !isAuthenticated ? (
+                <Auth onAuthenticate={() => setIsAuthenticated(true)} />
+              ) : (
+                <MainLayout onLogout={() => setIsAuthenticated(false)} />
+              )
+            } 
+          />
+          
+          {/* Redirect any unknown routes to landing */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

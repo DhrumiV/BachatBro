@@ -5,20 +5,19 @@ import { format } from 'date-fns';
 
 const History = () => {
   const { currentUser, isAuthenticated, setIsAuthenticated, setError: setGlobalError } = useApp();
-  
-  // LOCAL STATE - Fetched from Google Sheets ONLY
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [filters, setFilters] = useState({
-    month: '',
     category: '',
     paymentMethod: '',
+    type: '',
   });
+  const [sortField, setSortField] = useState('date');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch transactions from Google Sheets on mount
   useEffect(() => {
     if (currentUser?.sheetId && isAuthenticated) {
       loadTransactions();
@@ -26,35 +25,23 @@ const History = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.sheetId, isAuthenticated]);
 
-  // Apply filters whenever transactions or filters change
   useEffect(() => {
     applyFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactions, filters]);
+  }, [transactions, filters, sortField, sortDirection]);
 
   const loadTransactions = async () => {
-    if (!currentUser?.sheetId) {
-      setError('No sheet connected');
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setError('Not authenticated. Please sign in with Google.');
-      return;
-    }
+    if (!currentUser?.sheetId || !isAuthenticated) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      // FETCH FROM GOOGLE SHEETS - Single source of truth
       const data = await googleSheetsService.getTransactions(currentUser.sheetId);
       setTransactions(data);
     } catch (err) {
       setError(err.message);
       setGlobalError(err.message);
-      
-      // If auth expired, update status
       if (err.message.includes('Authentication expired')) {
         setIsAuthenticated(false);
       }
@@ -66,40 +53,58 @@ const History = () => {
   const applyFilters = () => {
     let filtered = [...transactions];
 
-    if (filters.month) {
-      filtered = filtered.filter(t => t.month === filters.month);
-    }
     if (filters.category) {
       filtered = filtered.filter(t => t.category === filters.category);
     }
     if (filters.paymentMethod) {
       filtered = filtered.filter(t => t.paymentMethod === filters.paymentMethod);
     }
+    if (filters.type) {
+      filtered = filtered.filter(t => t.type === filters.type);
+    }
 
-    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Sort
+    filtered.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      
+      if (sortField === 'date') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      } else if (sortField === 'amount') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      }
+
+      if (sortDirection === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
     setFilteredTransactions(filtered);
   };
 
-  const handleDelete = async (transaction) => {
-    if (!window.confirm('Are you sure you want to delete this transaction?')) {
-      return;
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
     }
+  };
+
+  const handleDelete = async (transaction) => {
+    if (!window.confirm('Are you sure you want to delete this transaction?')) return;
 
     setIsLoading(true);
-    setError(null);
-
     try {
-      // DELETE FROM GOOGLE SHEETS
       await googleSheetsService.deleteTransaction(currentUser.sheetId, transaction.rowIndex);
-      
-      // RE-FETCH from Google Sheets to get updated data
       await loadTransactions();
-      
-      alert('✅ Transaction deleted from Google Sheets');
+      alert('✅ Transaction deleted');
     } catch (err) {
-      setError(err.message);
       alert('❌ Failed to delete: ' + err.message);
-      
       if (err.message.includes('Authentication expired')) {
         setIsAuthenticated(false);
       }
@@ -108,36 +113,23 @@ const History = () => {
     }
   };
 
-  const handleEdit = (transaction) => {
-    setEditingTransaction({ ...transaction });
-  };
-
   const handleSaveEdit = async () => {
     setIsLoading(true);
-    setError(null);
-
     try {
-      // Auto-calculate month from date
       const date = new Date(editingTransaction.date);
-      const month = format(date, 'yyyy-MM');
-      editingTransaction.month = month;
+      editingTransaction.month = format(date, 'yyyy-MM');
 
-      // UPDATE IN GOOGLE SHEETS
       await googleSheetsService.updateTransaction(
         currentUser.sheetId,
         editingTransaction.rowIndex,
         editingTransaction
       );
       
-      // RE-FETCH from Google Sheets to get updated data
       await loadTransactions();
-      
       setEditingTransaction(null);
-      alert('✅ Transaction updated in Google Sheets');
+      alert('✅ Transaction updated');
     } catch (err) {
-      setError(err.message);
       alert('❌ Failed to update: ' + err.message);
-      
       if (err.message.includes('Authentication expired')) {
         setIsAuthenticated(false);
       }
@@ -146,236 +138,188 @@ const History = () => {
     }
   };
 
-  const uniqueMonths = [...new Set(transactions.map(t => t.month))].sort().reverse();
+  const formatCurrency = (amount) => {
+    return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
-  // Auth check
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !currentUser?.sheetId) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-500 dark:text-gray-400 mb-4">Please authenticate with Google to view history</div>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
-        >
-          Go to Connect Sheet
-        </button>
-      </div>
-    );
-  }
-
-  if (!currentUser?.sheetId) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-gray-500 dark:text-gray-400">No sheet connected. Please connect a Google Sheet first.</div>
+        <div className="text-secondary-text">Please connect your Google Sheet to view transactions</div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Refresh Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={loadTransactions}
-          disabled={isLoading}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
-          title="Refresh data from Google Sheets"
-        >
-          {isLoading ? '⏳ Loading...' : '🔄 Refresh from Sheet'}
-        </button>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-1">Transactions</h1>
+        <p className="text-secondary-text">View and manage all your transactions</p>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-4 rounded-lg transition-colors duration-200">
-          <strong>Error:</strong> {error}
-          <button
-            onClick={loadTransactions}
-            className="ml-4 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Loading State */}
-      {isLoading && (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <div className="text-gray-500 dark:text-gray-400 mt-4">Loading from Google Sheets...</div>
-        </div>
-      )}
-
       {/* Filters */}
-      {!isLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Month</label>
-            <select
-              value={filters.month}
-              onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-              className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
-            >
-              <option value="">All Months</option>
-              {uniqueMonths.map(month => (
-                <option key={month} value={month}>
-                  {format(new Date(month + '-01'), 'MMMM yyyy')}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
-            >
-              <option value="">All Categories</option>
-              {currentUser.categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
-            <select
-              value={filters.paymentMethod}
-              onChange={(e) => setFilters({ ...filters, paymentMethod: e.target.value })}
-              className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
-            >
-              <option value="">All Methods</option>
-              {currentUser.paymentMethods.map(method => (
-                <option key={method} value={method}>{method}</option>
-              ))}
-            </select>
-          </div>
+      <div className="card p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select
+            value={filters.category}
+            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+            className="input-field"
+          >
+            <option value="">All Categories</option>
+            {currentUser.categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.paymentMethod}
+            onChange={(e) => setFilters({ ...filters, paymentMethod: e.target.value })}
+            className="input-field"
+          >
+            <option value="">All Methods</option>
+            {currentUser.paymentMethods.map(method => (
+              <option key={method} value={method}>{method}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.type}
+            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+            className="input-field"
+          >
+            <option value="">All Types</option>
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+            <option value="EMI">EMI</option>
+            <option value="Investment">Investment</option>
+            <option value="Savings">Savings</option>
+          </select>
         </div>
+      </div>
+
+      {error && (
+        <div className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-xl">
+          <strong>Error:</strong> {error}
         </div>
       )}
 
       {/* Transactions Table */}
-      {!isLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-colors duration-200">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              Transactions ({filteredTransactions.length})
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700 transition-colors duration-200">
+            <thead className="bg-white/5 border-b border-white/5">
               <tr>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Category</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Payment</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
+                <th 
+                  className="text-left py-4 px-4 font-semibold text-secondary-text cursor-pointer hover:text-white"
+                  onClick={() => handleSort('date')}
+                >
+                  Date {sortField === 'date' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="text-left py-4 px-4 font-semibold text-secondary-text">Description</th>
+                <th className="text-left py-4 px-4 font-semibold text-secondary-text">Category</th>
+                <th className="text-left py-4 px-4 font-semibold text-secondary-text">Payment</th>
+                <th className="text-left py-4 px-4 font-semibold text-secondary-text">Type</th>
+                <th 
+                  className="text-right py-4 px-4 font-semibold text-secondary-text cursor-pointer hover:text-white"
+                  onClick={() => handleSort('amount')}
+                >
+                  Amount {sortField === 'amount' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="text-right py-4 px-4 font-semibold text-secondary-text">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.rowIndex} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                  <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{transaction.date}</td>
-                  <td className="py-3 px-4">
-                    <div className="font-medium text-gray-800 dark:text-gray-200">{transaction.category}</div>
-                    {transaction.subCategory && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{transaction.subCategory}</div>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      transaction.type === 'Expense' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
-                      transaction.type === 'EMI' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
-                      transaction.type === 'Investment' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
-                      'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-                    }`}>
-                      {transaction.type}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right font-medium text-gray-800 dark:text-gray-200">₹{transaction.amount.toFixed(2)}</td>
-                  <td className="py-3 px-4 text-gray-800 dark:text-gray-200">
-                    {transaction.paymentMethod}
-                    {transaction.cardName && ` - ${transaction.cardName}`}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => handleEdit(transaction)}
-                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm mr-2 transition-colors duration-200"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(transaction)}
-                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm transition-colors duration-200"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredTransactions.map((transaction) => {
+                const isIncome = transaction.type === 'Income';
+                return (
+                  <tr key={transaction.rowIndex} className="border-b border-white/5 hover:bg-white/5">
+                    <td className="py-4 px-4 text-white text-sm">{transaction.date}</td>
+                    <td className="py-4 px-4">
+                      <div className="font-semibold text-white">{transaction.notes || transaction.category}</div>
+                      {transaction.subCategory && (
+                        <div className="text-xs text-secondary-text">{transaction.subCategory}</div>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-white">{transaction.category}</td>
+                    <td className="py-4 px-4 text-secondary-text text-sm">
+                      {transaction.paymentMethod}
+                      {transaction.cardName && ` - ${transaction.cardName}`}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={isIncome ? 'badge-income' : 'badge-expense'}>
+                        {transaction.type}
+                      </span>
+                    </td>
+                    <td className={`py-4 px-4 text-right font-semibold ${isIncome ? 'text-success' : 'text-danger'}`}>
+                      {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <button
+                        onClick={() => setEditingTransaction({ ...transaction })}
+                        className="text-accent hover:text-accent/80 mr-3 text-sm"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(transaction)}
+                        className="text-danger hover:text-danger/80 text-sm"
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          {filteredTransactions.length === 0 && (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          
+          {filteredTransactions.length === 0 && !isLoading && (
+            <div className="text-center py-12 text-secondary-text">
               No transactions found
             </div>
           )}
-          </div>
+
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Edit Modal */}
       {editingTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-screen overflow-y-auto transition-colors duration-200">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Edit Transaction</h3>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="card p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">Edit Transaction</h3>
             <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-                <input
-                  type="date"
-                  value={editingTransaction.date}
-                  onChange={(e) => setEditingTransaction({ ...editingTransaction, date: e.target.value })}
-                  className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                <select
-                  value={editingTransaction.category}
-                  onChange={(e) => setEditingTransaction({ ...editingTransaction, category: e.target.value })}
-                  className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
-                >
-                  {currentUser.categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
-                <input
-                  type="number"
-                  value={editingTransaction.amount}
-                  onChange={(e) => setEditingTransaction({ ...editingTransaction, amount: parseFloat(e.target.value) })}
-                  className="w-full p-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
-                />
-              </div>
+              <input
+                type="date"
+                value={editingTransaction.date}
+                onChange={(e) => setEditingTransaction({ ...editingTransaction, date: e.target.value })}
+                className="input-field w-full"
+              />
+              <select
+                value={editingTransaction.category}
+                onChange={(e) => setEditingTransaction({ ...editingTransaction, category: e.target.value })}
+                className="input-field w-full"
+              >
+                {currentUser.categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                value={editingTransaction.amount}
+                onChange={(e) => setEditingTransaction({ ...editingTransaction, amount: parseFloat(e.target.value) })}
+                className="input-field w-full"
+              />
               <div className="flex space-x-2 pt-4">
-                <button
-                  onClick={handleSaveEdit}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
-                >
+                <button onClick={handleSaveEdit} disabled={isLoading} className="btn-primary flex-1">
                   {isLoading ? 'Saving...' : 'Save'}
                 </button>
-                <button
-                  onClick={() => setEditingTransaction(null)}
-                  className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 rounded-lg font-medium transition-colors duration-200"
-                >
+                <button onClick={() => setEditingTransaction(null)} className="btn-secondary flex-1">
                   Cancel
                 </button>
               </div>
