@@ -1,10 +1,10 @@
 # Offline Transaction Bug Fix - COMPLETE ✓
 
 ## Bug Description
-Transactions added offline were saved to sync queue but did NOT appear in History/Transactions list.
+Transactions added offline were saved to sync queue but did NOT appear in Transactions list.
 
 ## Root Cause
-Code was adding transactions to `bachatbro_sync_queue` but not properly updating `bachatbro_transactions_cache`, so when History loaded from cache, it didn't see the new transaction.
+Code was adding transactions to `bachatbro_sync_queue` but not properly updating `bachatbro_transactions_cache`, so when Transactions page loaded from cache, it didn't see the new transaction.
 
 ## Solution Implemented
 
@@ -19,7 +19,7 @@ Code was adding transactions to `bachatbro_sync_queue` but not properly updating
   - `_queuedAt` timestamp
   - `rowIndex: -1` as temporary placeholder
 
-### 2. Added Pending Badge in History Component
+### 2. Added Pending Badge in Transactions Component
 - Transactions with `_pending: true` show yellow "Pending Sync" badge
 - Badge appears next to transaction type
 - Edit/Delete buttons disabled for pending transactions
@@ -45,11 +45,11 @@ Code was adding transactions to `bachatbro_sync_queue` but not properly updating
 2. Transaction added to sync queue with `_pending` flag
 3. Transaction also added to cache (at beginning of array)
 4. Form shows "Saved offline" warning message
-5. Transaction appears immediately in History with yellow badge
+5. Transaction appears immediately in Transactions page with yellow badge
 6. Edit/Delete buttons disabled for this transaction
 
 ### Viewing Transactions Offline
-1. History loads from cache
+1. Transactions page loads from cache
 2. Pending transactions appear at top of list
 3. Yellow "Pending Sync" badge visible
 4. Actions column shows "Syncing..." for pending items
@@ -71,7 +71,7 @@ Code was adding transactions to `bachatbro_sync_queue` but not properly updating
 - Added logging for debugging
 - Handles case where cache doesn't exist yet
 
-### src/components/History/History.js
+### src/components/History/History.js (Transactions Page)
 - Added pending badge display
 - Conditional rendering for edit/delete buttons
 - Visual indicator for syncing transactions
@@ -102,7 +102,7 @@ Code was adding transactions to `bachatbro_sync_queue` but not properly updating
 1. ✓ Load app online (transactions visible)
 2. ✓ Turn off internet
 3. ✓ Add a transaction
-4. ✓ Go to History page
+4. ✓ Go to Transactions page
 5. ✓ New transaction appears immediately with yellow "Pending Sync" badge
 6. ✓ Turn internet back on
 7. ✓ Badge disappears after sync

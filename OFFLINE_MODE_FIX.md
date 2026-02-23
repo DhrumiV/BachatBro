@@ -36,7 +36,7 @@ Implemented comprehensive offline caching that stores last successful data fetch
   - Explains need to connect to load data
   - Retry button
 
-### 4. History (`src/components/History/History.js`)
+### 4. Transactions (`src/components/History/History.js`)
 - Updated to handle new response format with cache info
 - Prepared for showing pending transaction badges (future enhancement)
 
@@ -114,7 +114,7 @@ Implemented comprehensive offline caching that stores last successful data fetch
 1. `src/services/googleSheetsService.js` - Offline caching logic
 2. `src/components/Common/OfflineBanner.js` - Last synced time display
 3. `src/components/Dashboard/Dashboard.js` - Cache indicator & empty state
-4. `src/components/History/History.js` - Handle cached data
+4. `src/components/History/History.js` - Handle cached data (Transactions page)
 5. `src/components/ExpenseForm/ExpenseForm.js` - Offline save handling
 
 ## Build Status
