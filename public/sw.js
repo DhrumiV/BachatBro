@@ -3,13 +3,10 @@ const CACHE_NAME = 'bachatbro-v1';
 const STATIC_CACHE = 'bachatbro-static-v1';
 const DYNAMIC_CACHE = 'bachatbro-dynamic-v1';
 
-// Assets to cache on install
+// Assets to cache on install (only essential files)
 const STATIC_ASSETS = [
   '/',
   '/app',
-  '/index.html',
-  '/static/css/main.css',
-  '/static/js/main.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
@@ -22,11 +19,13 @@ self.addEventListener('install', (event) => {
     caches.open(STATIC_CACHE)
       .then((cache) => {
         console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' })))
-          .catch(err => {
-            console.log('[SW] Failed to cache some assets:', err);
-            // Continue even if some assets fail to cache
-          });
+        // Don't fail if some assets can't be cached
+        return Promise.allSettled(
+          STATIC_ASSETS.map(url => 
+            cache.add(new Request(url, { cache: 'reload' }))
+              .catch(err => console.log('[SW] Failed to cache:', url, err))
+          )
+        );
       })
       .then(() => self.skipWaiting())
   );
@@ -73,6 +72,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip service worker for hot reload in development
+  if (url.pathname.includes('hot-update')) {
+    return;
+  }
+
+  // Network-first for HTML to avoid stale content
+  if (request.destination === 'document' || request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful responses
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(DYNAMIC_CACHE)
+              .then((cache) => {
+                cache.put(request, responseClone);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Serve from cache if offline
+          return caches.match(request)
+            .then((response) => {
+              if (response) {
+                return response;
+              }
+              // Return offline page
+              return caches.match('/')
+                .then((response) => response || new Response('Offline'));
+            });
+        })
+    );
+    return;
+  }
+
   // Cache-first strategy for static assets
   if (request.destination === 'style' || 
       request.destination === 'script' || 
@@ -86,11 +121,14 @@ self.addEventListener('fetch', (event) => {
           }
           return fetch(request)
             .then((response) => {
-              return caches.open(DYNAMIC_CACHE)
-                .then((cache) => {
-                  cache.put(request, response.clone());
-                  return response;
-                });
+              if (response.ok) {
+                return caches.open(DYNAMIC_CACHE)
+                  .then((cache) => {
+                    cache.put(request, response.clone());
+                    return response;
+                  });
+              }
+              return response;
             });
         })
         .catch(() => {
@@ -105,34 +143,6 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-
-  // Network-first strategy for HTML pages
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        // Cache successful responses
-        if (response.ok) {
-          const responseClone = response.clone();
-          caches.open(DYNAMIC_CACHE)
-            .then((cache) => {
-              cache.put(request, responseClone);
-            });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Serve from cache if offline
-        return caches.match(request)
-          .then((response) => {
-            if (response) {
-              return response;
-            }
-            // Return offline page
-            return caches.match('/')
-              .then((response) => response || new Response('Offline'));
-          });
-      })
-  );
 });
 
 // Listen for messages from clients

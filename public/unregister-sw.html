@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Unregister Service Worker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0A0A0F;
+      color: white;
+    }
+    button {
+      background: #4F6EF7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #3d5dd6;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #111118;
+    }
+  </style>
+</head>
+<body>
+  <h1>Service Worker Management</h1>
+  <p>Use this page to manage the service worker if you're experiencing refresh loops.</p>
+  
+  <button onclick="unregisterSW()">Unregister Service Worker</button>
+  <button onclick="clearCaches()">Clear All Caches</button>
+  <button onclick="doAll()">Unregister & Clear All</button>
+  <button onclick="goBack()">Go Back to App</button>
+  
+  <div id="status"></div>
+
+  <script>
+    const status = document.getElementById('status');
+
+    async function unregisterSW() {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+        }
+        status.innerHTML = '✅ Service worker unregistered. Refresh the page.';
+      } else {
+        status.innerHTML = '❌ Service workers not supported.';
+      }
+    }
+
+    async function clearCaches() {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        status.innerHTML = '✅ All caches cleared. Refresh the page.';
+      } else {
+        status.innerHTML = '❌ Cache API not supported.';
+      }
+    }
+
+    async function doAll() {
+      await unregisterSW();
+      await clearCaches();
+      status.innerHTML = '✅ Service worker unregistered and caches cleared. Refresh the page.';
+    }
+
+    function goBack() {
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>

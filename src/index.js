@@ -17,16 +17,21 @@ if ('serviceWorker' in navigator) {
       .then((registration) => {
         console.log('SW registered:', registration);
         
-        // Check for updates
+        // Check for updates periodically (every 60 seconds)
+        setInterval(() => {
+          registration.update();
+        }, 60000);
+        
+        // Handle updates without auto-reload
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
+          if (!newWorker) return;
+          
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New service worker available, prompt user to refresh
-              if (window.confirm('New version available! Reload to update?')) {
-                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                window.location.reload();
-              }
+              // New service worker available, but don't auto-reload
+              console.log('New version available. Refresh to update.');
+              // You can show a toast notification here instead of confirm dialog
             }
           });
         });
