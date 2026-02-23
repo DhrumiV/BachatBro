@@ -247,6 +247,25 @@ class GoogleSheetsService {
   }
 
   async getTransactions(sheetId) {
+    // If offline, return cached data immediately
+    if (!navigator.onLine) {
+      console.log('📴 Offline - loading from cache');
+      const cached = localStorage.getItem('bachatbro_transactions_cache');
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          return {
+            transactions: data.transactions || [],
+            fromCache: true,
+            lastSynced: data.lastSynced || null
+          };
+        } catch (error) {
+          console.error('Failed to parse cached transactions:', error);
+        }
+      }
+      return { transactions: [], fromCache: true, lastSynced: null };
+    }
+
     if (!this.accessToken) {
       throw new Error('Not authenticated. Please sign in with Google.');
     }
@@ -275,7 +294,7 @@ class GoogleSheetsService {
       const rows = data.values || [];
 
       // Map rows to transaction objects with row index for edit/delete
-      return rows.map((row, index) => ({
+      const transactions = rows.map((row, index) => ({
         rowIndex: index + 2, // Row 1 is headers, data starts at row 2
         date: row[0] || '',
         month: row[1] || '',
@@ -287,15 +306,83 @@ class GoogleSheetsService {
         type: row[7] || 'Expense',
         notes: row[8] || '',
       }));
+
+      // Cache successful fetch
+      localStorage.setItem('bachatbro_transactions_cache', JSON.stringify({
+        transactions,
+        lastSynced: Date.now()
+      }));
+      console.log('✅ Transactions cached');
+
+      return {
+        transactions,
+        fromCache: false,
+        lastSynced: Date.now()
+      };
     } catch (error) {
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('Network error. Check your internet connection.');
+      // Fetch failed even though online (bad connection, auth error, etc.)
+      // Fall back to cache if available
+      if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
+        console.log('⚠️ Fetch failed - falling back to cache');
+        const cached = localStorage.getItem('bachatbro_transactions_cache');
+        if (cached) {
+          try {
+            const data = JSON.parse(cached);
+            return {
+              transactions: data.transactions || [],
+              fromCache: true,
+              lastSynced: data.lastSynced || null
+            };
+          } catch (parseError) {
+            console.error('Failed to parse cached transactions:', parseError);
+          }
+        }
       }
       throw error;
     }
   }
 
   async addTransaction(sheetId, transaction) {
+    // If offline, add to sync queue and local cache
+    if (!navigator.onLine) {
+      console.log('📴 Offline - adding to sync queue');
+      
+      // Add to sync queue
+      const queue = JSON.parse(localStorage.getItem('bachatbro_sync_queue') || '[]');
+      const queuedTransaction = {
+        ...transaction,
+        _queuedAt: Date.now(),
+        _tempId: `temp_${Date.now()}_${Math.random()}`,
+        _pending: true
+      };
+      queue.push(queuedTransaction);
+      localStorage.setItem('bachatbro_sync_queue', JSON.stringify(queue));
+      
+      // Also add to local cache so it shows up immediately
+      const cached = localStorage.getItem('bachatbro_transactions_cache');
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          const newTransaction = {
+            ...transaction,
+            rowIndex: -1, // Temporary row index
+            _pending: true,
+            _tempId: queuedTransaction._tempId
+          };
+          data.transactions.unshift(newTransaction); // Add to beginning
+          localStorage.setItem('bachatbro_transactions_cache', JSON.stringify(data));
+        } catch (error) {
+          console.error('Failed to update cache:', error);
+        }
+      }
+      
+      return {
+        success: true,
+        offline: true,
+        message: 'Saved offline · Will sync when connected'
+      };
+    }
+
     if (!this.accessToken) {
       throw new Error('Not authenticated. Please sign in with Google.');
     }
@@ -345,7 +432,22 @@ class GoogleSheetsService {
       return await response.json();
     } catch (error) {
       if (error.message.includes('Failed to fetch')) {
-        throw new Error('Network error. Check your internet connection.');
+        // Network error - add to queue like offline mode
+        console.log('⚠️ Network error - adding to sync queue');
+        const queue = JSON.parse(localStorage.getItem('bachatbro_sync_queue') || '[]');
+        queue.push({
+          ...transaction,
+          _queuedAt: Date.now(),
+          _tempId: `temp_${Date.now()}_${Math.random()}`,
+          _pending: true
+        });
+        localStorage.setItem('bachatbro_sync_queue', JSON.stringify(queue));
+        
+        return {
+          success: true,
+          offline: true,
+          message: 'Network error · Added to sync queue'
+        };
       }
       throw error;
     }

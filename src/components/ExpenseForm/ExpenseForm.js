@@ -64,9 +64,14 @@ const ExpenseForm = ({ onSuccess }) => {
         notes: formData.notes || '',
       };
 
-      await googleSheetsService.addTransaction(currentUser.sheetId, transaction);
+      const result = await googleSheetsService.addTransaction(currentUser.sheetId, transaction);
 
-      showMessage('Transaction added successfully!', 'success');
+      // Check if saved offline
+      if (result.offline) {
+        showMessage(result.message || 'Saved offline · Will sync when connected', 'warning');
+      } else {
+        showMessage('Transaction added successfully!', 'success');
+      }
       
       // Reset form
       setFormData({
@@ -245,6 +250,8 @@ const ExpenseForm = ({ onSuccess }) => {
           <div className={`mt-4 p-4 rounded-xl ${
             messageType === 'success' 
               ? 'bg-success/10 text-success border border-success/20' 
+              : messageType === 'warning'
+              ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
               : 'bg-danger/10 text-danger border border-danger/20'
           }`}>
             {message}

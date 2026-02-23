@@ -17,6 +17,10 @@ const History = () => {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [dataFromCache, setDataFromCache] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [lastSynced, setLastSynced] = useState(null);
 
   useEffect(() => {
     if (currentUser?.sheetId && isAuthenticated) {
@@ -38,7 +42,17 @@ const History = () => {
 
     try {
       const data = await googleSheetsService.getTransactions(currentUser.sheetId);
-      setTransactions(data);
+      
+      // Handle new response format with cache info
+      if (data.transactions) {
+        setTransactions(data.transactions);
+        setDataFromCache(data.fromCache || false);
+        setLastSynced(data.lastSynced || null);
+      } else {
+        // Fallback for old format (array directly)
+        setTransactions(data);
+        setDataFromCache(false);
+      }
     } catch (err) {
       setError(err.message);
       setGlobalError(err.message);
