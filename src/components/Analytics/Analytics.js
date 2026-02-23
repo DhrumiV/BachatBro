@@ -187,11 +187,14 @@ const Analytics = () => {
     <div className="space-y-6">
       {/* Refresh Button */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Analytics</h2>
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-1">Analytics</h1>
+          <p className="text-secondary-text">Track your savings and spending patterns</p>
+        </div>
         <button
           onClick={loadTransactions}
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
+          className="btn-primary"
           title="Refresh data from Google Sheets"
         >
           {isLoading ? '⏳' : '🔄 Refresh'}
@@ -199,12 +202,12 @@ const Analytics = () => {
       </div>
 
       {/* Month Selector */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Month</label>
+      <div className="card p-4">
+        <label className="block text-sm font-medium text-secondary-text mb-2">Select Month</label>
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-200"
+          className="input-field w-full"
         >
           {uniqueMonths.map(month => (
             <option key={month} value={month}>
@@ -215,36 +218,58 @@ const Analytics = () => {
       </div>
 
       {/* Budget vs Actual */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Budget vs Actual</h3>
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Category Savings Tracker</h3>
         <div className="space-y-4">
           {Object.entries(analytics.budgetComparison)
             .filter(([_, data]) => data.budget > 0)
-            .map(([category, data]) => (
-              <div key={category}>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{category}</span>
-                  <span className={`font-semibold ${data.difference >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    ₹{data.spent.toFixed(2)} / ₹{data.budget.toFixed(2)}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full ${
-                      data.percentage <= 100 ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.min(data.percentage, 100)}%` }}
-                  />
-                </div>
-                {data.percentage > 100 && (
-                  <div className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    ⚠️ Over budget by ₹{Math.abs(data.difference).toFixed(2)}
+            .map(([category, data]) => {
+              const saved = data.difference;
+              const isOverBudget = saved < 0;
+              
+              return (
+                <div key={category}>
+                  <div className="flex justify-between mb-2">
+                    <span className="font-medium text-white">{category}</span>
+                    <span className={`font-semibold ${saved >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {saved >= 0 
+                        ? `Saved ₹${saved.toFixed(0)}` 
+                        : `Over by ₹${Math.abs(saved).toFixed(0)}`
+                      }
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="w-full bg-white/10 rounded-full h-3 flex overflow-hidden">
+                    {!isOverBudget ? (
+                      <>
+                        {/* Saved portion - GREEN */}
+                        <div
+                          className="bg-success"
+                          style={{ width: `${(saved / data.budget) * 100}%` }}
+                        />
+                        {/* Spent portion - RED */}
+                        <div
+                          className="bg-danger"
+                          style={{ width: `${(data.spent / data.budget) * 100}%` }}
+                        />
+                      </>
+                    ) : (
+                      <div className="bg-danger w-full" />
+                    )}
+                  </div>
+                  {!isOverBudget && saved > 0 ? (
+                    <div className="text-sm text-success mt-1">
+                      ✓ You're on track to save ₹{saved.toFixed(0)} this month
+                    </div>
+                  ) : isOverBudget ? (
+                    <div className="text-sm text-danger mt-1">
+                      ⚠ Spending too fast, slow down by ₹{(Math.abs(saved) / 30).toFixed(0)}/day
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           {Object.values(analytics.budgetComparison).every(d => d.budget === 0) && (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+            <div className="text-center text-secondary-text py-4">
               No budgets set. Go to Settings to set category budgets.
             </div>
           )}
@@ -252,67 +277,67 @@ const Analytics = () => {
       </div>
 
       {/* Top 3 Expenses */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Top 3 Expenses</h3>
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Top 3 Expenses</h3>
         <div className="space-y-3">
           {analytics.topExpenses.map((expense, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
+            <div key={index} className="flex items-center justify-between p-3 bg-input-bg rounded-lg border border-white/10">
               <div>
-                <div className="font-medium text-gray-800 dark:text-gray-200">{expense.category}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">{expense.date}</div>
-                {expense.notes && <div className="text-sm text-gray-600 dark:text-gray-300">{expense.notes}</div>}
+                <div className="font-medium text-white">{expense.category}</div>
+                <div className="text-sm text-secondary-text">{expense.date}</div>
+                {expense.notes && <div className="text-sm text-secondary-text">{expense.notes}</div>}
               </div>
-              <div className="text-xl font-bold text-red-600 dark:text-red-400">₹{expense.amount.toFixed(2)}</div>
+              <div className="text-xl font-bold text-danger">₹{expense.amount.toFixed(2)}</div>
             </div>
           ))}
           {analytics.topExpenses.length === 0 && (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-4">No expenses this month</div>
+            <div className="text-center text-secondary-text py-4">No expenses this month</div>
           )}
         </div>
       </div>
 
       {/* Need vs Want */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Need vs Want Analysis</h3>
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Need vs Want Analysis</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg transition-colors duration-200">
-            <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Needs</div>
-            <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">₹{analytics.needSpent.toFixed(2)}</div>
-            <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+          <div className="p-4 bg-accent/10 rounded-xl border border-accent/20">
+            <div className="text-sm text-accent mb-1">Needs</div>
+            <div className="text-2xl font-bold text-white">₹{analytics.needSpent.toFixed(2)}</div>
+            <div className="text-sm text-accent mt-1">
               {analytics.totalSpent > 0 ? ((analytics.needSpent / analytics.totalSpent) * 100).toFixed(1) : 0}%
             </div>
           </div>
-          <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg transition-colors duration-200">
-            <div className="text-sm text-purple-600 dark:text-purple-400 mb-1">Wants</div>
-            <div className="text-2xl font-bold text-purple-800 dark:text-purple-300">₹{analytics.wantSpent.toFixed(2)}</div>
-            <div className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+          <div className="p-4 bg-success/10 rounded-xl border border-success/20">
+            <div className="text-sm text-success mb-1">Wants</div>
+            <div className="text-2xl font-bold text-white">₹{analytics.wantSpent.toFixed(2)}</div>
+            <div className="text-sm text-success mt-1">
               {analytics.totalSpent > 0 ? ((analytics.wantSpent / analytics.totalSpent) * 100).toFixed(1) : 0}%
             </div>
           </div>
         </div>
-        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
+        <div className="mt-4 p-3 bg-white/5 rounded-lg text-sm text-secondary-text">
           💡 Tip: Aim for 50% Needs, 30% Wants, 20% Savings
         </div>
       </div>
 
       {/* Monthly Comparison */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Monthly Comparison</h3>
+      <div className="card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Monthly Comparison</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Previous Month</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">₹{analytics.previousMonthTotal.toFixed(2)}</div>
+          <div className="p-4 bg-input-bg rounded-xl border border-white/10">
+            <div className="text-sm text-secondary-text mb-1">Previous Month</div>
+            <div className="text-2xl font-bold text-white">₹{analytics.previousMonthTotal.toFixed(2)}</div>
           </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition-colors duration-200">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Current Month</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">₹{analytics.totalSpent.toFixed(2)}</div>
+          <div className="p-4 bg-input-bg rounded-xl border border-white/10">
+            <div className="text-sm text-secondary-text mb-1">Current Month</div>
+            <div className="text-2xl font-bold text-white">₹{analytics.totalSpent.toFixed(2)}</div>
           </div>
         </div>
-        <div className={`mt-4 p-4 rounded-lg transition-colors duration-200 ${
-          analytics.monthlyChange > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'
+        <div className={`mt-4 p-4 rounded-xl ${
+          analytics.monthlyChange > 0 ? 'bg-danger/10 border border-danger/20' : 'bg-success/10 border border-success/20'
         }`}>
           <div className={`text-lg font-semibold ${
-            analytics.monthlyChange > 0 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'
+            analytics.monthlyChange > 0 ? 'text-danger' : 'text-success'
           }`}>
             {analytics.monthlyChange > 0 ? '📈 Increased' : '📉 Decreased'} by ₹{Math.abs(analytics.monthlyChange).toFixed(2)}
             {analytics.previousMonthTotal > 0 && (

@@ -1,0 +1,43 @@
+[build]
+  command = "npm run build"
+  functions = "netlify/functions"
+  publish = "build"
+
+# Redirect API calls to Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# SPA fallback for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  # Use esbuild for faster builds
+  node_bundler = "esbuild"
+  
+  # Set Node.js version
+  node_version = "18"
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    # HSTS: 1 year, include subdomains
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# Additional security for API endpoints
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    X-Content-Type-Options = "nosniff"
