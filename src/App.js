@@ -4,6 +4,7 @@ import { AppProvider } from './context/AppContext';
 import Auth from './components/Auth/Auth';
 import MainLayout from './components/Layout/MainLayout';
 import LandingPage from './components/Landing/LandingPage';
+import OfflineBanner from './components/Common/OfflineBanner';
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,6 +24,7 @@ function AppContent() {
   return (
     <Router>
       <div className="min-h-screen bg-dark-bg">
+        <OfflineBanner />
         <Routes>
           {/* Landing Page */}
           <Route path="/" element={<LandingPage />} />
