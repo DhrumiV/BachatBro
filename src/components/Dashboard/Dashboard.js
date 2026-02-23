@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import googleSheetsService from '../../services/googleSheetsService';
-import { format } from 'date-fns';
+import { format, addMonths, subMonths } from 'date-fns';
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Target, Tag, Plus, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import CategoryChart from '../Charts/CategoryChart';
 import TrendChart from '../Charts/TrendChart';
 import ExpenseForm from '../ExpenseForm/ExpenseForm';
@@ -84,6 +85,27 @@ const Dashboard = () => {
     return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const navigateMonth = (direction) => {
+    const currentDate = new Date(selectedMonth + '-01');
+    const newDate = direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1);
+    const newMonth = format(newDate, 'yyyy-MM');
+    setSelectedMonth(newMonth);
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      'Food': '#10B981',
+      'Bills': '#EF4444',
+      'Transport': '#3B82F6',
+      'Shopping': '#F59E0B',
+      'Entertainment': '#8B5CF6',
+      'Health': '#06B6D4',
+      'Cravings': '#EC4899',
+      'Other': '#6B7280'
+    };
+    return colors[category] || '#6B7280';
+  };
+
   if (!isAuthenticated || !currentUser?.sheetId) {
     return (
       <div className="text-center py-12">
@@ -163,40 +185,51 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-        <button
-          onClick={() => setShowAddExpense(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <span>Record Expense</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          {/* Connection Status */}
+          <div className="flex items-center space-x-2 px-3 py-2 bg-white/5 rounded-lg">
+            {navigator.onLine ? (
+              <>
+                <Wifi className="w-4 h-4 text-success" />
+                <span className="text-xs text-success">Connected</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 text-danger" />
+                <span className="text-xs text-danger">Offline</span>
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => setShowAddExpense(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Record Expense</span>
+          </button>
+        </div>
       </div>
 
-      {/* Month Selector */}
+      {/* Month Selector with Arrows */}
       <div className="card p-4">
-        <div className="flex items-center space-x-4">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="input-field flex-1"
-          >
-            {uniqueMonths.length > 0 ? (
-              uniqueMonths.map(month => (
-                <option key={month} value={month}>
-                  {format(new Date(month + '-01'), 'MMMM yyyy')}
-                </option>
-              ))
-            ) : (
-              <option value={selectedMonth}>
-                {format(new Date(selectedMonth + '-01'), 'MMMM yyyy')}
-              </option>
-            )}
-          </select>
+        <div className="flex items-center justify-between">
           <button
-            onClick={loadTransactions}
-            disabled={isLoading}
-            className="btn-secondary"
+            onClick={() => navigateMonth('prev')}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label="Previous month"
           >
-            {isLoading ? '⏳' : '🔄'}
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+          <h2 className="text-xl font-bold text-white">
+            {format(new Date(selectedMonth + '-01'), 'MMMM yyyy')}
+          </h2>
+          <button
+            onClick={() => navigateMonth('next')}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label="Next month"
+            disabled={selectedMonth >= format(new Date(), 'yyyy-MM')}
+          >
+            <ChevronRight className={`w-5 h-5 ${selectedMonth >= format(new Date(), 'yyyy-MM') ? 'text-secondary-text' : 'text-white'}`} />
           </button>
         </div>
       </div>
@@ -220,14 +253,14 @@ const Dashboard = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="text-secondary-text text-sm">Total Balance</div>
                 <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center">
-                  <span className="text-accent text-xl">💰</span>
+                  <Wallet className="w-5 h-5 text-accent" />
                 </div>
               </div>
               <div className={`text-3xl font-bold mb-2 ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
                 {formatCurrency(balance)}
               </div>
-              <div className={`text-sm ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
-                {balance >= 0 ? '↑' : '↓'} Net amount
+              <div className={`text-sm text-secondary-text`}>
+                Net amount this month
               </div>
             </div>
 
@@ -236,7 +269,7 @@ const Dashboard = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="text-secondary-text text-sm">Monthly Income</div>
                 <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center">
-                  <span className="text-success text-xl">📈</span>
+                  <TrendingUp className="w-5 h-5 text-success" />
                 </div>
               </div>
               <div className="text-3xl font-bold text-success mb-2">
@@ -252,7 +285,7 @@ const Dashboard = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="text-secondary-text text-sm">Monthly Expenses</div>
                 <div className="w-10 h-10 bg-danger/20 rounded-xl flex items-center justify-center">
-                  <span className="text-danger text-xl">📉</span>
+                  <TrendingDown className="w-5 h-5 text-danger" />
                 </div>
               </div>
               <div className="text-3xl font-bold text-danger mb-2">
@@ -265,13 +298,13 @@ const Dashboard = () => {
           </div>
 
           {/* Summary Cards Row 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Saved This Month */}
             <div className="card p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="text-secondary-text text-sm">Saved This Month</div>
-                <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center">
-                  <span className="text-success text-xl">💰</span>
+                <div className={`w-10 h-10 ${balance >= 0 ? 'bg-success/20' : 'bg-danger/20'} rounded-xl flex items-center justify-center`}>
+                  <PiggyBank className={`w-5 h-5 ${balance >= 0 ? 'text-success' : 'text-danger'}`} />
                 </div>
               </div>
               {income > 0 ? (
@@ -279,32 +312,36 @@ const Dashboard = () => {
                   <div className={`text-3xl font-bold mb-2 ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatCurrency(Math.abs(balance))}
                   </div>
-                  <div className={`text-sm ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <div className={`text-sm text-secondary-text`}>
                     {balance >= 0 ? 'Great job saving!' : 'Spent more than earned'}
                   </div>
                 </>
               ) : (
                 <div>
                   <div className="text-2xl font-bold text-white">₹0.00</div>
-                  <div className="text-xs text-secondary-text mt-1">Add income transactions to track savings</div>
+                  <div className="text-xs text-secondary-text mt-1">Add income to track savings</div>
                 </div>
               )}
             </div>
 
             {/* Budget Status */}
             <div className="card p-6">
-              <div className="text-secondary-text text-sm mb-2">Budget Status</div>
+              <div className="flex items-start justify-between mb-4">
+                <div className="text-secondary-text text-sm">Budget Status</div>
+                <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center">
+                  <Target className="w-5 h-5 text-accent" />
+                </div>
+              </div>
               {monthlyBudget > 0 ? (
                 <>
-                  <div className={`text-3xl font-bold mb-3 ${budgetUtilization <= 100 ? 'text-success' : 'text-danger'}`}>
+                  <div className={`text-2xl font-bold mb-3 ${budgetUtilization <= 100 ? 'text-success' : 'text-danger'}`}>
                     {budgetUtilization <= 100 
-                      ? `${(100 - budgetUtilization).toFixed(1)}% saved`
-                      : `Over by ${(budgetUtilization - 100).toFixed(1)}%`
+                      ? `${(100 - budgetUtilization).toFixed(0)}% saved`
+                      : `Over by ${(budgetUtilization - 100).toFixed(0)}%`
                     }
                   </div>
-                  <div className="w-full bg-white/10 rounded-full h-2">
+                  <div className="w-full bg-white/10 rounded-full h-2 mb-2">
                     {budgetUtilization <= 100 ? (
-                      // Show saved portion in green, spent in red
                       <div className="h-2 rounded-full flex">
                         <div 
                           className="bg-success rounded-l-full"
@@ -316,24 +353,58 @@ const Dashboard = () => {
                         ></div>
                       </div>
                     ) : (
-                      // Over budget - full red
                       <div className="h-2 rounded-full bg-danger w-full"></div>
                     )}
                   </div>
-                  <div className="text-xs text-secondary-text mt-2">
-                    {budgetUtilization <= 100 
-                      ? `On track to save ₹${formatCurrency(monthlyBudget - totalExpenses).replace('₹', '')}`
-                      : `Over budget by ₹${formatCurrency(totalExpenses - monthlyBudget).replace('₹', '')}`
-                    }
+                  <div className="text-xs text-secondary-text">
+                    ₹{formatCurrency(totalExpenses).replace('₹', '')} of ₹{formatCurrency(monthlyBudget).replace('₹', '')} used
                   </div>
                 </>
               ) : (
-                <button
-                  onClick={() => window.location.hash = '#settings'}
-                  className="text-left hover:text-accent transition-colors"
-                >
-                  <div className="text-sm text-secondary-text">Set up budget in Settings →</div>
-                </button>
+                <div className="text-sm text-secondary-text">
+                  Set up budget in Settings →
+                </div>
+              )}
+            </div>
+
+            {/* Top Category */}
+            <div className="card p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="text-secondary-text text-sm">Top Category</div>
+                <div className="w-10 h-10 bg-warning/20 rounded-xl flex items-center justify-center">
+                  <Tag className="w-5 h-5 text-warning" />
+                </div>
+              </div>
+              {Object.keys(categoryData).length > 0 ? (
+                (() => {
+                  const topCategory = Object.entries(categoryData).sort((a, b) => b[1] - a[1])[0];
+                  const [category, amount] = topCategory;
+                  const percentage = (amount / totalExpenses * 100).toFixed(0);
+                  const budget = currentUser?.categoryBudgets?.[category] || 0;
+                  const isOverBudget = budget > 0 && amount > budget;
+                  
+                  return (
+                    <>
+                      <div className="text-xl font-bold text-white mb-1">{category}</div>
+                      <div className={`text-2xl font-bold mb-2 ${isOverBudget ? 'text-danger' : 'text-white'}`}>
+                        {formatCurrency(amount)}
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-1.5 mb-1">
+                        <div 
+                          className={`h-1.5 rounded-full ${isOverBudget ? 'bg-danger' : 'bg-accent'}`}
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-secondary-text">
+                        {percentage}% of total spending
+                      </div>
+                    </>
+                  );
+                })()
+              ) : (
+                <div className="text-sm text-secondary-text">
+                  No spending data yet
+                </div>
               )}
             </div>
           </div>
@@ -358,24 +429,87 @@ const Dashboard = () => {
                         <div className="flex items-center space-x-2">
                           {isOnTrack ? (
                             <>
-                              <span className="text-success">
-                                ✓ Saved ₹{saved.toFixed(0)}
+                              <span className="text-success text-sm">
+                                Saved ₹{saved.toFixed(0)}
                               </span>
                             </>
                           ) : isOverBudget ? (
                             <>
-                              <span className="text-danger">
+                              <span className="text-danger text-sm">
                                 Over by ₹{Math.abs(saved).toFixed(0)}
                               </span>
                             </>
                           ) : (
-                            <span className="text-secondary-text">{formatCurrency(amount)}</span>
+                            <span className="text-secondary-text text-sm">{formatCurrency(amount)}</span>
                           )}
                         </div>
                       </div>
                     );
                   })}
               </div>
+            </div>
+          )}
+
+          {/* Recent Transactions */}
+          {monthTransactions.length > 0 && (
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">Recent Transactions</h3>
+                <button
+                  onClick={() => window.location.hash = '#transactions'}
+                  className="text-accent hover:text-accent/80 text-sm font-medium transition-colors"
+                >
+                  View All →
+                </button>
+              </div>
+              <div className="space-y-3">
+                {monthTransactions.slice(0, 5).map((transaction, index) => {
+                  const isIncome = transaction.type === 'Income';
+                  const categoryColor = getCategoryColor(transaction.category);
+                  const categoryInitial = transaction.category?.charAt(0).toUpperCase() || '?';
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg transition-colors">
+                      {/* Left: Category Circle */}
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                          style={{ backgroundColor: categoryColor }}
+                        >
+                          {categoryInitial}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-white truncate">{transaction.category}</div>
+                          <div className="text-xs text-secondary-text truncate">
+                            {transaction.subCategory || transaction.notes || transaction.paymentMethod}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Center-Right: Date and Payment */}
+                      <div className="text-right mr-4 hidden sm:block">
+                        <div className="text-sm text-secondary-text">
+                          {format(new Date(transaction.date), 'd MMM')}
+                        </div>
+                        <div className="text-xs text-secondary-text">
+                          {transaction.paymentMethod}
+                        </div>
+                      </div>
+                      
+                      {/* Right: Amount */}
+                      <div className={`text-right font-semibold ${isIncome ? 'text-success' : 'text-danger'}`}>
+                        {isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {monthTransactions.length === 0 && (
+                <div className="text-center py-8 text-secondary-text">
+                  <p className="mb-2">No transactions this month</p>
+                  <p className="text-sm">Tap Record Expense to get started</p>
+                </div>
+              )}
             </div>
           )}
 
