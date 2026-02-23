@@ -345,41 +345,49 @@ class GoogleSheetsService {
   async addTransaction(sheetId, transaction) {
     // If offline, add to sync queue and local cache
     if (!navigator.onLine) {
-      console.log('📴 Offline - adding to sync queue');
+      console.log('📴 Offline - adding to sync queue and cache');
       
-      // Add to sync queue
-      const queue = JSON.parse(localStorage.getItem('bachatbro_sync_queue') || '[]');
-      const queuedTransaction = {
+      // Create the new transaction object
+      const newTransaction = {
         ...transaction,
-        _queuedAt: Date.now(),
+        rowIndex: -1, // Temporary row index
+        _pending: true,
         _tempId: `temp_${Date.now()}_${Math.random()}`,
-        _pending: true
+        _queuedAt: Date.now()
       };
-      queue.push(queuedTransaction);
-      localStorage.setItem('bachatbro_sync_queue', JSON.stringify(queue));
       
-      // Also add to local cache so it shows up immediately
+      // STEP 1: Add to sync queue
+      const queue = JSON.parse(localStorage.getItem('bachatbro_sync_queue') || '[]');
+      queue.push(newTransaction);
+      localStorage.setItem('bachatbro_sync_queue', JSON.stringify(queue));
+      console.log('✅ Added to sync queue');
+      
+      // STEP 2: Add to local cache so it shows up immediately
       const cached = localStorage.getItem('bachatbro_transactions_cache');
       if (cached) {
         try {
           const data = JSON.parse(cached);
-          const newTransaction = {
-            ...transaction,
-            rowIndex: -1, // Temporary row index
-            _pending: true,
-            _tempId: queuedTransaction._tempId
-          };
-          data.transactions.unshift(newTransaction); // Add to beginning
+          // Add to beginning of array so it appears at top
+          data.transactions.unshift(newTransaction);
           localStorage.setItem('bachatbro_transactions_cache', JSON.stringify(data));
+          console.log('✅ Added to transaction cache - now has', data.transactions.length, 'transactions');
         } catch (error) {
           console.error('Failed to update cache:', error);
         }
+      } else {
+        // No cache exists yet, create one with this transaction
+        console.log('⚠️ No cache exists, creating new cache with this transaction');
+        localStorage.setItem('bachatbro_transactions_cache', JSON.stringify({
+          transactions: [newTransaction],
+          lastSynced: Date.now()
+        }));
       }
       
       return {
         success: true,
         offline: true,
-        message: 'Saved offline · Will sync when connected'
+        message: 'Saved offline · Will sync when connected',
+        transaction: newTransaction
       };
     }
 

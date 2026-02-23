@@ -111,9 +111,9 @@ class OfflineManager {
       // Import googleSheetsService dynamically to avoid circular dependencies
       const { default: googleSheetsService } = await import('../services/googleSheetsService');
       
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      const currentUserName = localStorage.getItem('currentUser');
       const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find(u => u.name === currentUser);
+      const user = users.find(u => u.name === currentUserName);
       
       if (!user || !user.sheetId) {
         return { success: false, message: 'No sheet connected' };
@@ -121,11 +121,24 @@ class OfflineManager {
 
       let synced = 0;
       const failed = [];
+      const syncedTempIds = [];
 
       for (const transaction of queue) {
         try {
-          await googleSheetsService.addTransaction(user.sheetId, transaction);
+          // Remove internal flags before syncing
+          const cleanTransaction = { ...transaction };
+          delete cleanTransaction._queuedAt;
+          delete cleanTransaction._tempId;
+          delete cleanTransaction._pending;
+          delete cleanTransaction.rowIndex;
+          
+          await googleSheetsService.addTransaction(user.sheetId, cleanTransaction);
           synced++;
+          
+          // Track which temp IDs were successfully synced
+          if (transaction._tempId) {
+            syncedTempIds.push(transaction._tempId);
+          }
         } catch (error) {
           console.error('Failed to sync transaction:', error);
           failed.push(transaction);
@@ -137,6 +150,24 @@ class OfflineManager {
         localStorage.setItem(CACHE_KEYS.SYNC_QUEUE, JSON.stringify(failed));
       } else {
         this.clearSyncQueue();
+      }
+
+      // Remove _pending flag from synced transactions in cache
+      if (syncedTempIds.length > 0) {
+        const cached = localStorage.getItem(CACHE_KEYS.TRANSACTIONS);
+        if (cached) {
+          try {
+            const data = JSON.parse(cached);
+            // Remove pending transactions that were synced
+            data.transactions = data.transactions.filter(t => 
+              !t._tempId || !syncedTempIds.includes(t._tempId)
+            );
+            localStorage.setItem(CACHE_KEYS.TRANSACTIONS, JSON.stringify(data));
+            console.log('✅ Removed', syncedTempIds.length, 'pending transactions from cache');
+          } catch (error) {
+            console.error('Failed to update cache after sync:', error);
+          }
+        }
       }
 
       return {

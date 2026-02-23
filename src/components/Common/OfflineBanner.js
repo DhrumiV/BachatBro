@@ -30,6 +30,11 @@ const OfflineBanner = () => {
     if (result.success && result.count > 0) {
       setSyncMessage(result.message);
       updateLastSyncedTime();
+      
+      // Trigger a page reload to refresh data from Google Sheets
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } else if (result.failed > 0) {
       setSyncMessage(`Synced ${result.count}, ${result.failed} failed`);
     }

@@ -261,26 +261,39 @@ const History = () => {
                       {transaction.cardName && ` - ${transaction.cardName}`}
                     </td>
                     <td className="py-4 px-4">
-                      <span className={isIncome ? 'badge-income' : 'badge-expense'}>
-                        {transaction.type}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={isIncome ? 'badge-income' : 'badge-expense'}>
+                          {transaction.type}
+                        </span>
+                        {transaction._pending && (
+                          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-medium">
+                            Pending Sync
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className={`py-4 px-4 text-right font-semibold ${isIncome ? 'text-success' : 'text-danger'}`}>
                       {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <button
-                        onClick={() => setEditingTransaction({ ...transaction })}
-                        className="text-accent hover:text-accent/80 mr-3 text-sm"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(transaction)}
-                        className="text-danger hover:text-danger/80 text-sm"
-                      >
-                        🗑️
-                      </button>
+                      {!transaction._pending ? (
+                        <>
+                          <button
+                            onClick={() => setEditingTransaction({ ...transaction })}
+                            className="text-accent hover:text-accent/80 mr-3 text-sm"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDelete(transaction)}
+                            className="text-danger hover:text-danger/80 text-sm"
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-secondary-text">Syncing...</span>
+                      )}
                     </td>
                   </tr>
                 );
