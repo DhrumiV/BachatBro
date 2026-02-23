@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import googleSheetsService from '../../services/googleSheetsService';
 import { format } from 'date-fns';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 
 const Categories = () => {
   const { currentUser, isAuthenticated, setIsAuthenticated, saveUser } = useApp();

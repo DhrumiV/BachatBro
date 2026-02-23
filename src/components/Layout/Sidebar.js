@@ -1,5 +1,4 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
 import { LayoutDashboard, ArrowLeftRight, Plus, Tag, Settings } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed, currentUser, isAuthenticated }) => {
