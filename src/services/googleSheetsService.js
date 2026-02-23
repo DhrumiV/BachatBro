@@ -8,14 +8,17 @@ class GoogleSheetsService {
     this.isInitialized = false;
     this.tokenExpiry = null;
     
-    // Try to restore token from sessionStorage (persists during browser session)
+    // Token stored in localStorage for PWA persistence
+    // This is the implicit flow token - expires in 1 hour
+    // Full persistent auth (refresh tokens) is planned 
+    // in Tasks 6-9 of the backend auth implementation
     this.restoreSession();
   }
 
   restoreSession() {
     try {
-      const savedToken = sessionStorage.getItem('gapi_token');
-      const savedExpiry = sessionStorage.getItem('gapi_token_expiry');
+      const savedToken = localStorage.getItem('bachatbro_auth_token');
+      const savedExpiry = localStorage.getItem('bachatbro_token_expiry');
       
       if (savedToken && savedExpiry) {
         const expiryTime = parseInt(savedExpiry, 10);
@@ -25,7 +28,7 @@ class GoogleSheetsService {
         if (expiryTime > now + 300000) {
           this.accessToken = savedToken;
           this.tokenExpiry = expiryTime;
-          console.log('✅ Session restored from sessionStorage');
+          console.log('✅ Session restored from localStorage');
         } else {
           // Token expired, clear it
           this.clearSession();
@@ -40,10 +43,10 @@ class GoogleSheetsService {
   saveSession(token, expiresIn = 3600) {
     try {
       const expiryTime = Date.now() + (expiresIn * 1000);
-      sessionStorage.setItem('gapi_token', token);
-      sessionStorage.setItem('gapi_token_expiry', expiryTime.toString());
+      localStorage.setItem('bachatbro_auth_token', token);
+      localStorage.setItem('bachatbro_token_expiry', expiryTime.toString());
       this.tokenExpiry = expiryTime;
-      console.log('✅ Session saved to sessionStorage');
+      console.log('✅ Session saved to localStorage');
     } catch (error) {
       console.error('Failed to save session:', error);
     }
@@ -51,8 +54,8 @@ class GoogleSheetsService {
 
   clearSession() {
     try {
-      sessionStorage.removeItem('gapi_token');
-      sessionStorage.removeItem('gapi_token_expiry');
+      localStorage.removeItem('bachatbro_auth_token');
+      localStorage.removeItem('bachatbro_token_expiry');
       this.accessToken = null;
       this.tokenExpiry = null;
     } catch (error) {

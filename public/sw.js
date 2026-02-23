@@ -1,31 +1,27 @@
 // BachatBro Service Worker
-const CACHE_NAME = 'bachatbro-v1';
-const STATIC_CACHE = 'bachatbro-static-v1';
-const DYNAMIC_CACHE = 'bachatbro-dynamic-v1';
+const CACHE_NAME = 'bachatbro-v2';
+const STATIC_CACHE = 'bachatbro-static-v2';
+const DYNAMIC_CACHE = 'bachatbro-dynamic-v2';
 
-// Assets to cache on install (only essential files)
+// Assets to cache on install - complete app shell for offline use
 const STATIC_ASSETS = [
   '/',
+  '/index.html',
   '/app',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
-// Install event - cache static assets
+// Install event - cache complete app shell
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Caching static assets');
-        // Don't fail if some assets can't be cached
-        return Promise.allSettled(
-          STATIC_ASSETS.map(url => 
-            cache.add(new Request(url, { cache: 'reload' }))
-              .catch(err => console.log('[SW] Failed to cache:', url, err))
-          )
-        );
+        console.log('[SW] Caching app shell for offline use');
+        // Cache all static assets - app must work offline
+        return cache.addAll(STATIC_ASSETS);
       })
       .then(() => self.skipWaiting())
   );
@@ -55,20 +51,16 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // NEVER intercept Google OAuth or API requests
+  if (url.origin.includes('accounts.google.com') || 
+      url.origin.includes('googleapis.com') ||
+      url.origin.includes('google.com')) {
+    // Let Google requests pass through directly
+    return;
+  }
+
   // Skip cross-origin requests
   if (url.origin !== location.origin) {
-    // Network first for Google APIs
-    if (url.origin.includes('googleapis.com') || url.origin.includes('google.com')) {
-      event.respondWith(
-        fetch(request)
-          .catch(() => {
-            return new Response(
-              JSON.stringify({ error: 'Offline - Google Sheets unavailable' }),
-              { headers: { 'Content-Type': 'application/json' } }
-            );
-          })
-      );
-    }
     return;
   }
 
@@ -77,7 +69,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML to avoid stale content
+  // For navigation requests (HTML pages)
   if (request.destination === 'document' || request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -93,22 +85,28 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Serve from cache if offline
+          // When offline, serve cached version or index.html
           return caches.match(request)
             .then((response) => {
               if (response) {
                 return response;
               }
-              // Return offline page
-              return caches.match('/')
-                .then((response) => response || new Response('Offline'));
+              // Always return index.html for offline - shows last known app state
+              return caches.match('/index.html')
+                .then((indexResponse) => {
+                  if (indexResponse) {
+                    return indexResponse;
+                  }
+                  // Fallback to root
+                  return caches.match('/');
+                });
             });
         })
     );
     return;
   }
 
-  // Cache-first strategy for static assets
+  // Cache-first strategy for static assets (CSS, JS, images, fonts)
   if (request.destination === 'style' || 
       request.destination === 'script' || 
       request.destination === 'image' ||

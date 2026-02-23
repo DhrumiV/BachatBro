@@ -10,8 +10,30 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Check if user exists and has valid auth token
     const currentUser = localStorage.getItem('currentUser');
-    if (currentUser) {
+    const savedToken = localStorage.getItem('bachatbro_auth_token');
+    const savedExpiry = localStorage.getItem('bachatbro_token_expiry');
+    const savedSheetId = localStorage.getItem('bachatbro_sheet_id');
+    
+    if (currentUser && savedToken && savedExpiry && savedSheetId) {
+      const expiryTime = parseInt(savedExpiry, 10);
+      const now = Date.now();
+      
+      // Check if token is still valid (with 5 min buffer)
+      if (expiryTime > now + 300000) {
+        // Token is valid, skip sign-in
+        setIsAuthenticated(true);
+        console.log('✅ Auto-authenticated from localStorage');
+      } else {
+        // Token expired, clear it
+        console.log('⚠️ Token expired, clearing auth');
+        localStorage.removeItem('bachatbro_auth_token');
+        localStorage.removeItem('bachatbro_token_expiry');
+        setIsAuthenticated(false);
+      }
+    } else if (currentUser) {
+      // User exists but no valid token
       setIsAuthenticated(true);
     }
   }, []);

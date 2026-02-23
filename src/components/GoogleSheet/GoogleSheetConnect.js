@@ -82,8 +82,9 @@ const GoogleSheetConnect = ({ onConnect }) => {
       // Validate and setup sheet (creates headers if needed)
       const result = await googleSheetsService.validateAndSetupSheet(trimmedSheetId);
       
-      // Save sheet ID to user profile
+      // Save sheet ID to user profile AND localStorage for PWA persistence
       saveUser({ ...currentUser, sheetId: trimmedSheetId });
+      localStorage.setItem('bachatbro_sheet_id', trimmedSheetId);
       
       showMessage(`✅ ${result.message}`, 'success');
       
@@ -226,8 +227,8 @@ const GoogleSheetConnect = ({ onConnect }) => {
 
         {/* Security Notice */}
         <div className="mt-4 p-3 bg-success/10 border border-success/20 rounded-xl text-sm text-success">
-          <strong>🔒 Security:</strong> Your authentication token persists during your browser session. 
-          Close your browser to clear the token automatically.
+          <strong>🔒 Security:</strong> Your authentication token is stored locally for PWA functionality. 
+          Token expires in 1 hour. Full persistent auth (refresh tokens) is planned in future updates.
         </div>
       </div>
     </div>
