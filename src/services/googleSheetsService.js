@@ -1,5 +1,9 @@
+import { dbService } from './db';
+import syncService from './syncService';
+import migrationService from './migrationService';
+
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
-const REQUIRED_HEADERS = ['Date', 'Month', 'Category', 'SubCategory', 'PaymentMethod', 'CardName', 'Amount', 'Type', 'Notes'];
+const REQUIRED_HEADERS = ['ID', 'Date', 'Month', 'Category', 'SubCategory', 'PaymentMethod', 'CardName', 'Amount', 'Type', 'Notes', 'CreatedAt', 'UpdatedAt'];
 
 class GoogleSheetsService {
   constructor() {
@@ -13,6 +17,20 @@ class GoogleSheetsService {
     // Full persistent auth (refresh tokens) is planned 
     // in Tasks 6-9 of the backend auth implementation
     this.restoreSession();
+    
+    // Run migration on initialization
+    this.runMigration();
+  }
+
+  async runMigration() {
+    try {
+      const result = await migrationService.migrate();
+      if (result.migrated && result.count > 0) {
+        console.log(`✅ Migrated ${result.count} transactions to IndexedDB`);
+      }
+    } catch (error) {
+      console.error('Migration failed:', error);
+    }
   }
 
   restoreSession() {
@@ -28,6 +46,10 @@ class GoogleSheetsService {
         if (expiryTime > now + 300000) {
           this.accessToken = savedToken;
           this.tokenExpiry = expiryTime;
+          
+          // Set token in sync service
+          syncService.setAccessToken(savedToken);
+          
           console.log('✅ Session restored from localStorage');
         } else {
           // Token expired, clear it
@@ -46,6 +68,10 @@ class GoogleSheetsService {
       localStorage.setItem('bachatbro_auth_token', token);
       localStorage.setItem('bachatbro_token_expiry', expiryTime.toString());
       this.tokenExpiry = expiryTime;
+      
+      // Set token in sync service
+      syncService.setAccessToken(token);
+      
       console.log('✅ Session saved to localStorage');
     } catch (error) {
       console.error('Failed to save session:', error);
@@ -190,7 +216,7 @@ class GoogleSheetsService {
 
   async getFirstRow(sheetId) {
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A1:I1`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A1:L1`,
       {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
@@ -225,7 +251,7 @@ class GoogleSheetsService {
 
   async createHeaders(sheetId) {
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A1:I1?valueInputOption=RAW`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A1:L1?valueInputOption=RAW`,
       {
         method: 'PUT',
         headers: {
@@ -247,142 +273,79 @@ class GoogleSheetsService {
   }
 
   async getTransactions(sheetId) {
-    // If offline, return cached data immediately
+    // Always load from IndexedDB first (single source of truth)
+    const localTransactions = await dbService.getAllTransactions();
+    
+    // If offline, return local data immediately
     if (!navigator.onLine) {
-      console.log('📴 Offline - loading from cache');
-      const cached = localStorage.getItem('bachatbro_transactions_cache');
-      if (cached) {
-        try {
-          const data = JSON.parse(cached);
-          return {
-            transactions: data.transactions || [],
-            fromCache: true,
-            lastSynced: data.lastSynced || null
-          };
-        } catch (error) {
-          console.error('Failed to parse cached transactions:', error);
-        }
-      }
-      return { transactions: [], fromCache: true, lastSynced: null };
+      console.log('📴 Offline - loading from IndexedDB');
+      return {
+        transactions: localTransactions,
+        fromCache: true,
+        lastSynced: null
+      };
     }
 
     if (!this.accessToken) {
+      // Not authenticated but have local data
+      if (localTransactions.length > 0) {
+        return {
+          transactions: localTransactions,
+          fromCache: true,
+          lastSynced: null
+        };
+      }
       throw new Error('Not authenticated. Please sign in with Google.');
     }
 
     try {
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A2:I`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-          },
-        }
-      );
-
-      if (response.status === 401) {
-        this.clearSession();
-        throw new Error('Authentication expired. Please sign in again.');
-      }
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to fetch transactions');
-      }
-
-      const data = await response.json();
-      const rows = data.values || [];
-
-      // Map rows to transaction objects with row index for edit/delete
-      const transactions = rows.map((row, index) => ({
-        rowIndex: index + 2, // Row 1 is headers, data starts at row 2
-        date: row[0] || '',
-        month: row[1] || '',
-        category: row[2] || '',
-        subCategory: row[3] || '',
-        paymentMethod: row[4] || '',
-        cardName: row[5] || '',
-        amount: parseFloat(row[6]) || 0,
-        type: row[7] || 'Expense',
-        notes: row[8] || '',
-      }));
-
-      // Cache successful fetch
-      localStorage.setItem('bachatbro_transactions_cache', JSON.stringify({
-        transactions,
-        lastSynced: Date.now()
-      }));
-      console.log('✅ Transactions cached');
-
+      // Pull latest data from Google Sheets and sync with IndexedDB
+      await syncService.pullFromSheet(sheetId);
+      
+      // Return updated local data
+      const updatedTransactions = await dbService.getAllTransactions();
+      
       return {
-        transactions,
+        transactions: updatedTransactions,
         fromCache: false,
         lastSynced: Date.now()
       };
     } catch (error) {
-      // Fetch failed even though online (bad connection, auth error, etc.)
-      // Fall back to cache if available
+      // Fetch failed - return local data if available
       if (error.message.includes('Failed to fetch') || error.message.includes('Network error')) {
-        console.log('⚠️ Fetch failed - falling back to cache');
-        const cached = localStorage.getItem('bachatbro_transactions_cache');
-        if (cached) {
-          try {
-            const data = JSON.parse(cached);
-            return {
-              transactions: data.transactions || [],
-              fromCache: true,
-              lastSynced: data.lastSynced || null
-            };
-          } catch (parseError) {
-            console.error('Failed to parse cached transactions:', parseError);
-          }
-        }
+        console.log('⚠️ Fetch failed - returning IndexedDB data');
+        return {
+          transactions: localTransactions,
+          fromCache: true,
+          lastSynced: null
+        };
       }
+      
+      // Auth error or other error
+      if (localTransactions.length > 0) {
+        return {
+          transactions: localTransactions,
+          fromCache: true,
+          lastSynced: null
+        };
+      }
+      
       throw error;
     }
   }
 
   async addTransaction(sheetId, transaction) {
-    // If offline, add to sync queue and local cache
+    // Step 1: Always save to IndexedDB first (single source of truth)
+    const newTransaction = await dbService.addTransaction({
+      ...transaction,
+      syncStatus: 'pending'
+    });
+    
+    console.log('✅ Transaction saved to IndexedDB:', newTransaction.id);
+
+    // Step 2: If offline, return immediately
     if (!navigator.onLine) {
-      console.log('📴 Offline - adding to sync queue and cache');
-      
-      // Create the new transaction object
-      const newTransaction = {
-        ...transaction,
-        rowIndex: -1, // Temporary row index
-        _pending: true,
-        _tempId: `temp_${Date.now()}_${Math.random()}`,
-        _queuedAt: Date.now()
-      };
-      
-      // STEP 1: Add to sync queue
-      const queue = JSON.parse(localStorage.getItem('bachatbro_sync_queue') || '[]');
-      queue.push(newTransaction);
-      localStorage.setItem('bachatbro_sync_queue', JSON.stringify(queue));
-      console.log('✅ Added to sync queue');
-      
-      // STEP 2: Add to local cache so it shows up immediately
-      const cached = localStorage.getItem('bachatbro_transactions_cache');
-      if (cached) {
-        try {
-          const data = JSON.parse(cached);
-          // Add to beginning of array so it appears at top
-          data.transactions.unshift(newTransaction);
-          localStorage.setItem('bachatbro_transactions_cache', JSON.stringify(data));
-          console.log('✅ Added to transaction cache - now has', data.transactions.length, 'transactions');
-        } catch (error) {
-          console.error('Failed to update cache:', error);
-        }
-      } else {
-        // No cache exists yet, create one with this transaction
-        console.log('⚠️ No cache exists, creating new cache with this transaction');
-        localStorage.setItem('bachatbro_transactions_cache', JSON.stringify({
-          transactions: [newTransaction],
-          lastSynced: Date.now()
-        }));
-      }
-      
+      console.log('📴 Offline - will sync when connected');
       return {
         success: true,
         offline: true,
@@ -391,100 +354,67 @@ class GoogleSheetsService {
       };
     }
 
-    if (!this.accessToken) {
-      throw new Error('Not authenticated. Please sign in with Google.');
-    }
-
-    // Validate required fields
-    if (!transaction.date || !transaction.category || !transaction.amount) {
-      throw new Error('Date, Category, and Amount are required');
-    }
-
-    const row = [
-      transaction.date,
-      transaction.month,
-      transaction.category || '',
-      transaction.subCategory || '',
-      transaction.paymentMethod || '',
-      transaction.cardName || '',
-      transaction.amount,
-      transaction.type || 'Expense',
-      transaction.notes || '',
-    ];
-
-    try {
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A:I:append?valueInputOption=RAW`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            values: [row],
-          }),
+    // Step 3: If online, trigger background sync
+    if (this.accessToken) {
+      // Trigger sync in background (don't wait for it)
+      syncService.syncPendingTransactions(sheetId).then(result => {
+        if (result.success) {
+          console.log('✅ Background sync completed');
         }
-      );
-
-      if (response.status === 401) {
-        this.clearSession();
-        throw new Error('Authentication expired. Please sign in again.');
-      }
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to add transaction');
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error.message.includes('Failed to fetch')) {
-        // Network error - add to queue like offline mode
-        console.log('⚠️ Network error - adding to sync queue');
-        const queue = JSON.parse(localStorage.getItem('bachatbro_sync_queue') || '[]');
-        queue.push({
-          ...transaction,
-          _queuedAt: Date.now(),
-          _tempId: `temp_${Date.now()}_${Math.random()}`,
-          _pending: true
-        });
-        localStorage.setItem('bachatbro_sync_queue', JSON.stringify(queue));
-        
-        return {
-          success: true,
-          offline: true,
-          message: 'Network error · Added to sync queue'
-        };
-      }
-      throw error;
+      }).catch(error => {
+        console.error('Background sync failed:', error);
+      });
     }
+
+    return {
+      success: true,
+      offline: false,
+      message: 'Transaction added successfully!',
+      transaction: newTransaction
+    };
   }
 
-  async updateTransaction(sheetId, rowIndex, transaction) {
+  async updateTransaction(sheetId, transactionId, transaction) {
     if (!this.accessToken) {
       throw new Error('Not authenticated. Please sign in with Google.');
     }
 
-    if (!rowIndex || rowIndex < 2) {
-      throw new Error('Invalid row index');
+    // Step 1: Update in IndexedDB
+    const updated = await dbService.updateTransaction(transactionId, {
+      ...transaction,
+      syncStatus: 'pending' // Mark as pending sync
+    });
+
+    if (!updated) {
+      throw new Error('Transaction not found in local database');
     }
 
+    // Step 2: Get sheet row index
+    const localTransaction = await dbService.getTransaction(transactionId);
+    if (!localTransaction.sheetRowIndex) {
+      throw new Error('Transaction not yet synced to sheet');
+    }
+
+    const rowIndex = localTransaction.sheetRowIndex;
+
     const row = [
-      transaction.date,
-      transaction.month,
-      transaction.category || '',
-      transaction.subCategory || '',
-      transaction.paymentMethod || '',
-      transaction.cardName || '',
-      transaction.amount,
-      transaction.type || 'Expense',
-      transaction.notes || '',
+      localTransaction.id,
+      localTransaction.date,
+      localTransaction.month,
+      localTransaction.category || '',
+      localTransaction.subCategory || '',
+      localTransaction.paymentMethod || '',
+      localTransaction.cardName || '',
+      localTransaction.amount,
+      localTransaction.type || 'Expense',
+      localTransaction.notes || '',
+      localTransaction.createdAt,
+      localTransaction.updatedAt
     ];
 
     try {
       const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A${rowIndex}:I${rowIndex}?valueInputOption=RAW`,
+        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A${rowIndex}:L${rowIndex}?valueInputOption=RAW`,
         {
           method: 'PUT',
           headers: {
@@ -507,6 +437,9 @@ class GoogleSheetsService {
         throw new Error(error.error?.message || 'Failed to update transaction');
       }
 
+      // Mark as synced
+      await dbService.markAsSynced(transactionId, rowIndex);
+
       return await response.json();
     } catch (error) {
       if (error.message.includes('Failed to fetch')) {
@@ -516,14 +449,25 @@ class GoogleSheetsService {
     }
   }
 
-  async deleteTransaction(sheetId, rowIndex) {
+  async deleteTransaction(sheetId, transactionId) {
     if (!this.accessToken) {
       throw new Error('Not authenticated. Please sign in with Google.');
     }
 
-    if (!rowIndex || rowIndex < 2) {
-      throw new Error('Invalid row index. Cannot delete header row.');
+    // Step 1: Get transaction from IndexedDB
+    const transaction = await dbService.getTransaction(transactionId);
+    if (!transaction) {
+      throw new Error('Transaction not found in local database');
     }
+
+    if (!transaction.sheetRowIndex || transaction.sheetRowIndex < 2) {
+      // Transaction not yet synced or invalid row
+      // Just delete from IndexedDB
+      await dbService.deleteTransaction(transactionId);
+      return { success: true, localOnly: true };
+    }
+
+    const rowIndex = transaction.sheetRowIndex;
 
     try {
       const response = await fetch(
@@ -560,6 +504,9 @@ class GoogleSheetsService {
         const error = await response.json();
         throw new Error(error.error?.message || 'Failed to delete transaction');
       }
+
+      // Step 2: Delete from IndexedDB
+      await dbService.deleteTransaction(transactionId);
 
       return await response.json();
     } catch (error) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import offlineManager from '../../utils/offlineManager';
+import syncService from '../../services/syncService';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
 const OfflineBanner = () => {
@@ -7,18 +8,11 @@ const OfflineBanner = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
-  const [lastSynced, setLastSynced] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
-  const updateLastSyncedTime = () => {
-    const cached = localStorage.getItem('bachatbro_transactions_cache');
-    if (cached) {
-      try {
-        const data = JSON.parse(cached);
-        setLastSynced(data.lastSynced);
-      } catch (error) {
-        console.error('Failed to get last synced time:', error);
-      }
-    }
+  const updatePendingCount = async () => {
+    const count = await offlineManager.getPendingCount();
+    setPendingCount(count);
   };
 
   const handleSync = async () => {
@@ -29,35 +23,28 @@ const OfflineBanner = () => {
     
     if (result.success && result.count > 0) {
       setSyncMessage(result.message);
-      updateLastSyncedTime();
+      await updatePendingCount();
       
-      // Trigger a page reload to refresh data from Google Sheets
+      // Trigger a page reload to refresh data
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } else if (result.failed > 0) {
       setSyncMessage(`Synced ${result.count}, ${result.failed} failed`);
+      await updatePendingCount();
+    } else if (result.count === 0) {
+      setSyncMessage('Nothing to sync');
+    } else {
+      setSyncMessage(result.message || 'Sync failed');
     }
     
     setIsSyncing(false);
   };
 
-  const getLastSyncedText = (timestamp) => {
-    if (!timestamp) return 'Never synced';
-    const diff = Date.now() - timestamp;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes} min ago`;
-    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-    return `${days} day${days !== 1 ? 's' : ''} ago`;
-  };
-
   useEffect(() => {
-    // Get last synced time on mount
-    updateLastSyncedTime();
+    // Update pending count on mount and periodically
+    updatePendingCount();
+    const interval = setInterval(updatePendingCount, 30000); // Every 30 seconds
 
     const unsubscribe = offlineManager.subscribe((status) => {
       setIsOnline(status === 'online');
@@ -74,25 +61,31 @@ const OfflineBanner = () => {
       }
     });
 
-    // Update last synced time every minute
-    const interval = setInterval(updateLastSyncedTime, 60000);
+    // Subscribe to sync events
+    const unsubscribeSync = syncService.subscribe((event) => {
+      if (event.type === 'sync_complete') {
+        updatePendingCount();
+      }
+    });
 
     return () => {
       unsubscribe();
+      unsubscribeSync();
       clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Always show banner when offline
+  // Always show banner if offline
   if (!isOnline) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/90 backdrop-blur-sm text-black py-3 px-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <WifiOff className="w-5 h-5 text-white" />
-            <span className="text-white font-medium text-sm">
-              You're offline · Showing data from {getLastSyncedText(lastSynced)}
+            <WifiOff className="w-5 h-5" />
+            <span className="font-medium">
+              You're offline
+              {pendingCount > 0 && ` · ${pendingCount} transaction${pendingCount !== 1 ? 's' : ''} pending sync`}
             </span>
           </div>
         </div>
@@ -100,44 +93,58 @@ const OfflineBanner = () => {
     );
   }
 
-  // Show banner temporarily when coming back online
-  if (!showBanner) return null;
-
-  return (
-    <div className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-success/90 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Wifi className="w-5 h-5 text-white" />
-          <span className="text-white font-medium text-sm">
-            {syncMessage || 'Back online'}
-          </span>
+  // Show banner temporarily when coming back online or syncing
+  if (showBanner || isSyncing || syncMessage) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 bg-success/90 backdrop-blur-sm text-white py-3 px-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {isSyncing ? (
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            ) : (
+              <Wifi className="w-5 h-5" />
+            )}
+            <span className="font-medium">
+              {syncMessage || 'Back online'}
+            </span>
+          </div>
+          {!isSyncing && pendingCount > 0 && (
+            <button
+              onClick={handleSync}
+              className="px-4 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+            >
+              Sync Now ({pendingCount})
+            </button>
+          )}
         </div>
-        
-        {offlineManager.hasPendingTransactions() && !isSyncing && (
+      </div>
+    );
+  }
+
+  // Show pending count indicator if there are pending transactions
+  if (pendingCount > 0) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500/90 backdrop-blur-sm text-black py-2 px-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <RefreshCw className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {pendingCount} transaction{pendingCount !== 1 ? 's' : ''} pending sync
+            </span>
+          </div>
           <button
             onClick={handleSync}
-            className="flex items-center space-x-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+            disabled={isSyncing}
+            className="px-3 py-1 bg-black/20 hover:bg-black/30 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
           >
-            <RefreshCw className="w-4 h-4 text-white" />
-            <span className="text-white text-sm">Sync Now</span>
+            {isSyncing ? 'Syncing...' : 'Sync Now'}
           </button>
-        )}
-        
-        {isSyncing && (
-          <RefreshCw className="w-5 h-5 text-white animate-spin" />
-        )}
-        
-        {!offlineManager.hasPendingTransactions() && (
-          <button
-            onClick={() => setShowBanner(false)}
-            className="text-white hover:text-white/80 text-xl leading-none"
-          >
-            ×
-          </button>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
 
 export default OfflineBanner;

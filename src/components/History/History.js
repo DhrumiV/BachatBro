@@ -114,7 +114,7 @@ const History = () => {
 
     setIsLoading(true);
     try {
-      await googleSheetsService.deleteTransaction(currentUser.sheetId, transaction.rowIndex);
+      await googleSheetsService.deleteTransaction(currentUser.sheetId, transaction.id);
       await loadTransactions();
       alert('✅ Transaction deleted');
     } catch (err) {
@@ -135,7 +135,7 @@ const History = () => {
 
       await googleSheetsService.updateTransaction(
         currentUser.sheetId,
-        editingTransaction.rowIndex,
+        editingTransaction.id,
         editingTransaction
       );
       
@@ -247,7 +247,7 @@ const History = () => {
               {filteredTransactions.map((transaction) => {
                 const isIncome = transaction.type === 'Income';
                 return (
-                  <tr key={transaction.rowIndex} className="border-b border-white/5 hover:bg-white/5">
+                  <tr key={transaction.id || transaction.rowIndex} className="border-b border-white/5 hover:bg-white/5">
                     <td className="py-4 px-4 text-white text-sm">{transaction.date}</td>
                     <td className="py-4 px-4">
                       <div className="font-semibold text-white">{transaction.notes || transaction.category}</div>
@@ -265,9 +265,14 @@ const History = () => {
                         <span className={isIncome ? 'badge-income' : 'badge-expense'}>
                           {transaction.type}
                         </span>
-                        {transaction._pending && (
+                        {transaction.syncStatus === 'pending' && (
                           <span className="px-2 py-1 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-medium">
                             Pending Sync
+                          </span>
+                        )}
+                        {transaction.syncStatus === 'failed' && (
+                          <span className="px-2 py-1 bg-red-500/20 text-red-500 border border-red-500/30 rounded-lg text-xs font-medium">
+                            Sync Failed
                           </span>
                         )}
                       </div>
@@ -276,7 +281,7 @@ const History = () => {
                       {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </td>
                     <td className="py-4 px-4 text-right">
-                      {!transaction._pending ? (
+                      {transaction.syncStatus === 'synced' ? (
                         <>
                           <button
                             onClick={() => setEditingTransaction({ ...transaction })}
@@ -292,7 +297,13 @@ const History = () => {
                           </button>
                         </>
                       ) : (
-                        <span className="text-xs text-secondary-text">Syncing...</span>
+                        <button
+                          onClick={() => setEditingTransaction({ ...transaction })}
+                          className="text-accent hover:text-accent/80 text-sm"
+                          title="Edit pending transaction"
+                        >
+                          ✏️
+                        </button>
                       )}
                     </td>
                   </tr>
